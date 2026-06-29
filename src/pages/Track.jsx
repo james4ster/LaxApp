@@ -3,7 +3,19 @@ import PossessionWidget from '../components/PossessionWidget';
 import GoalieBar from '../components/GoalieBar';
 import StatSection from '../components/StatSection';
 import PlayerModal from '../components/PlayerModal';
-import { STAT_SECTIONS, ROLE_SECTIONS, NEEDS_PLAYER } from '../lib/constants';
+import EndGameButton from '../components/EndGameButton';
+import FinalScoreModal from '../components/FinalScoreModal';
+import PenaltyPad from '../components/PenaltyPad';
+import StrengthToggle from '../components/StrengthToggle';
+import {
+  STAT_SECTIONS,
+  ROLE_SECTIONS,
+  ROLE_SHOWS_GOALIE,
+  ROLE_SHOWS_POSSESSION,
+  ROLE_SHOWS_STRENGTH,
+  ROLE_SHOWS_PENALTIES,
+  NEEDS_PLAYER,
+} from '../lib/constants';
 
 export default function Track({
   counts,
@@ -25,8 +37,13 @@ export default function Track({
   totalMs,
   onSetPoss,
   role,
+  onEndGame,
+  onRecordPenalty,
+  strength,
+  onSetStrength,
 }) {
   const [modalStat, setModalStat] = useState(null);
+  const [showEndGameModal, setShowEndGameModal] = useState(false);
 
   const visibleSectionIds = ROLE_SECTIONS[role] ?? ROLE_SECTIONS.solo;
   const visibleSections = STAT_SECTIONS.filter((s) =>
@@ -49,24 +66,30 @@ export default function Track({
     <>
       {/* Scrollable content */}
       <div style={styles.scroll} className="scroll-y">
-        <PossessionWidget
-          possState={possState}
-          usMs={usMs}
-          themMs={themMs}
-          usPct={usPct}
-          themPct={themPct}
-          totalMs={totalMs}
-          onSetPoss={onSetPoss}
-        />
-
-        <GoalieBar
-          goalies={goalies}
-          activeGoalie={activeGoalie}
-          onChangeGoalie={onChangeGoalie}
-          saves={saves}
-          ga={ga}
-          svPct={svPct}
-        />
+      {ROLE_SHOWS_STRENGTH[role] && (
+          <StrengthToggle strength={strength} onChange={onSetStrength} />
+        )}
+        {ROLE_SHOWS_POSSESSION[role] && (
+          <PossessionWidget
+            possState={possState}
+            usMs={usMs}
+            themMs={themMs}
+            onSetPoss={onSetPoss}
+          />
+        )}
+        {ROLE_SHOWS_PENALTIES[role] && (
+          <PenaltyPad onRecordPenalty={onRecordPenalty} />
+        )}
+        {ROLE_SHOWS_GOALIE[role] && (
+          <GoalieBar
+            goalies={goalies}
+            activeGoalie={activeGoalie}
+            onChangeGoalie={onChangeGoalie}
+            saves={saves}
+            ga={ga}
+            svPct={svPct}
+          />
+        )}
 
         {visibleSections.map((sec) => (
           <StatSection
@@ -88,9 +111,12 @@ export default function Track({
             {lastLabel}
           </strong>
         </div>
-        <button style={styles.undoBtn} onClick={onUndo}>
-          ↩ Undo
-        </button>
+        <div style={styles.undoRight}>
+          <button style={styles.undoBtn} onClick={onUndo}>
+            ↩ Undo
+          </button>
+          <EndGameButton onConfirmed={() => setShowEndGameModal(true)} />
+        </div>
       </div>
 
       {/* Full-screen player modal */}
@@ -100,6 +126,18 @@ export default function Track({
         fieldPlayers={fieldPlayers}
         onRecord={handleRecord}
         onClose={() => setModalStat(null)}
+      />
+
+      {/* Final score / end game confirmation */}
+      <FinalScoreModal
+        isOpen={showEndGameModal}
+        scoreUs={counts.goal}
+        scoreThem={counts.ogoal}
+        onCancel={() => setShowEndGameModal(false)}
+        onConfirm={() => {
+          setShowEndGameModal(false);
+          onEndGame?.();
+        }}
       />
     </>
   );
@@ -122,6 +160,13 @@ const styles = {
     borderTop: '1px solid var(--bdr)',
     flexShrink: 0,
     background: 'var(--surf)',
+    gap: 8,
+  },
+  undoRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
   },
   undoText: {
     fontSize: 11,

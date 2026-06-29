@@ -7,11 +7,13 @@ import Setup from './pages/Setup';
 import { useGame } from './hooks/useGame';
 import { usePossession } from './hooks/usePossession';
 import { useTheme } from './hooks/useTheme';
+import { useStrength } from './hooks/useStrength';
 import './styles/globals.css';
 
 export default function App() {
   const [tab, setTab] = useState('track');
   const [role, setRole] = useState('solo');
+  const [gameEnded, setGameEnded] = useState(false);
 
   // ── Hooks ────────────────────────────────────────────────────────────────
   const {
@@ -27,6 +29,7 @@ export default function App() {
     svPct,
     sogUs,
     recordStat,
+    recordPenalty,
     undoLast,
     setQuarter,
     setActiveGoalie,
@@ -34,6 +37,7 @@ export default function App() {
 
   const { possState, usMs, themMs, usPct, themPct, totalMs, setPoss } =
     usePossession();
+  const { strength, setStrength } = useStrength();
 
   const {
     isDark,
@@ -81,6 +85,13 @@ export default function App() {
           totalMs={totalMs}
           onSetPoss={setPoss}
           role={role}
+          onEndGame={() => {
+            setGameEnded(true);
+            // TODO: persist final score to Supabase once game_id is wired up
+          }}
+          onRecordPenalty={recordPenalty}
+          strength={strength}
+          onSetStrength={setStrength}
         />
       </div>
 

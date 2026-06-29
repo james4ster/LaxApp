@@ -66,7 +66,7 @@ export default function ScoreStrip({
       </div>
 
       <div style={s.qtabs}>
-        {[1, 2, 3, 4].map((q) => (
+      {[1, 2, 3, 4, 'OT'].map((q) => (
           <button
             key={q}
             onClick={() => onQuarterChange(q)}
@@ -83,7 +83,7 @@ export default function ScoreStrip({
               transition: 'background .12s, color .12s',
             }}
           >
-            Q{q}
+            {q === 'OT' ? 'OT' : `Q${q}`}
           </button>
         ))}
       </div>

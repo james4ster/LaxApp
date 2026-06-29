@@ -7,20 +7,11 @@ function fmtMs(ms) {
   return `${m}:${sec < 10 ? '0' : ''}${sec}`;
 }
 
-export default function PossessionWidget({
-  possState,
-  usMs,
-  themMs,
-  usPct,
-  themPct,
-  totalMs,
-  onSetPoss,
-}) {
+export default function PossessionWidget({ possState, usMs, themMs, onSetPoss }) {
   const isLive = possState !== 'none';
 
   return (
     <div style={styles.widget}>
-      {/* Header */}
       <div style={styles.header}>
         <span style={styles.headerLbl}>Possession</span>
         <div style={styles.headerLine} />
@@ -31,13 +22,10 @@ export default function PossessionWidget({
         )}
       </div>
 
-      {/* Buttons */}
       <div style={styles.body}>
         <PossBtn
-          side="us"
           label="US"
           active={possState === 'us'}
-          currentMs={possState === 'us' ? usMs : 0}
           totalMs={usMs}
           onTap={() => onSetPoss('us')}
           colorClass="us"
@@ -47,8 +35,7 @@ export default function PossessionWidget({
             onClick={() => onSetPoss('none')}
             style={{
               ...styles.noneBtn,
-              background:
-                possState === 'none' ? 'var(--surf3)' : 'var(--surf2)',
+              background: possState === 'none' ? 'var(--surf3)' : 'var(--surf2)',
               color: possState === 'none' ? 'var(--txt)' : 'var(--txt2)',
             }}
           >
@@ -56,42 +43,18 @@ export default function PossessionWidget({
           </button>
         </div>
         <PossBtn
-          side="them"
           label="THEM"
           active={possState === 'them'}
-          currentMs={possState === 'them' ? themMs : 0}
           totalMs={themMs}
           onTap={() => onSetPoss('them')}
           colorClass="them"
         />
       </div>
-
-      {/* Bar */}
-      <div style={styles.barRow}>
-        <div style={{ ...styles.barUs, width: usPct + '%' }} />
-        <div style={{ ...styles.barThem, width: themPct + '%' }} />
-      </div>
-
-      {/* Pct labels */}
-      <div style={styles.pctRow}>
-        <span style={styles.pctLbl}>{totalMs > 0 ? usPct + '% us' : '–'}</span>
-        <span style={styles.pctLbl}>
-          {totalMs > 0 ? themPct + '% opp' : '–'}
-        </span>
-      </div>
     </div>
   );
 }
 
-function PossBtn({
-  side,
-  label,
-  active,
-  currentMs,
-  totalMs,
-  onTap,
-  colorClass,
-}) {
+function PossBtn({ label, active, totalMs, onTap, colorClass }) {
   const isUs = colorClass === 'us';
 
   return (
@@ -101,35 +64,15 @@ function PossBtn({
         ...styles.possBtn,
         background: isUs ? 'var(--tp)' : 'var(--surf3)',
         boxShadow: active
-          ? `0 0 0 2.5px ${
-              isUs ? 'var(--ta)' : '#e53e3e'
-            }, 0 3px 0 rgba(0,0,0,.18)`
+          ? `0 0 0 2.5px ${isUs ? 'var(--ta)' : '#e53e3e'}, 0 3px 0 rgba(0,0,0,.18)`
           : '0 3px 0 rgba(0,0,0,.18)',
       }}
     >
-      <div
-        style={{
-          ...styles.possBtnLbl,
-          color: isUs ? 'var(--tpt)' : 'var(--txt)',
-        }}
-      >
+      <div style={{ ...styles.possBtnLbl, color: isUs ? 'var(--tpt)' : 'var(--txt)' }}>
         {label}
       </div>
-      <div
-        style={{
-          ...styles.possTime,
-          color: isUs ? 'var(--ta)' : active ? '#e53e3e' : 'var(--txt)',
-        }}
-      >
-        {fmtMs(currentMs)}
-      </div>
-      <div
-        style={{
-          ...styles.possTotal,
-          color: isUs ? 'var(--tpt)' : 'var(--txt)',
-        }}
-      >
-        total {fmtMs(totalMs)}
+      <div style={{ ...styles.possTime, color: isUs ? 'var(--ta)' : 'var(--txt)' }}>
+        {fmtMs(totalMs)}
       </div>
     </button>
   );
@@ -143,12 +86,7 @@ const styles = {
     overflow: 'hidden',
     flexShrink: 0,
   },
-  header: {
-    padding: '5px 10px 3px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-  },
+  header: { padding: '5px 10px 3px', display: 'flex', alignItems: 'center', gap: 6 },
   headerLbl: {
     fontSize: 9,
     fontWeight: 800,
@@ -161,39 +99,23 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: '1fr auto 1fr',
     gap: 5,
-    padding: '6px 6px 4px',
+    padding: '6px 6px 8px',
     alignItems: 'center',
   },
   possBtn: {
     border: 'none',
     borderRadius: 10,
     cursor: 'pointer',
-    padding: '8px 6px',
+    padding: '10px 6px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: 3,
     transition: 'transform .07s, box-shadow .07s',
   },
-  possBtnLbl: {
-    fontSize: 10,
-    fontWeight: 800,
-    letterSpacing: '.5px',
-    textTransform: 'uppercase',
-  },
-  possTime: {
-    fontSize: 20,
-    fontWeight: 800,
-    lineHeight: 1,
-    fontVariantNumeric: 'tabular-nums',
-  },
-  possTotal: { fontSize: 9, fontWeight: 600, opacity: 0.6 },
-  mid: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 3,
-  },
+  possBtnLbl: { fontSize: 10, fontWeight: 800, letterSpacing: '.5px', textTransform: 'uppercase' },
+  possTime: { fontSize: 22, fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums' },
+  mid: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 },
   noneBtn: {
     border: 'none',
     borderRadius: 8,
@@ -203,13 +125,4 @@ const styles = {
     cursor: 'pointer',
     letterSpacing: '.3px',
   },
-  barRow: { height: 3, display: 'flex' },
-  barUs: { background: 'var(--tp)', transition: 'width .4s', height: '100%' },
-  barThem: { background: '#e53e3e', transition: 'width .4s', height: '100%' },
-  pctRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '2px 7px 5px',
-  },
-  pctLbl: { fontSize: 9, fontWeight: 700, color: 'var(--txt2)' },
 };

@@ -92,18 +92,55 @@ export const STAT_SECTIONS = [
 ];
 
 // ── Which sections each keeper role sees ──────────────────────────────────
+// k1 = "Scoring" role (goals, shots, goalie)
+// k2 = "Field" role (ground balls, turnovers, faceoffs)
+// k3 = "Penalties" role (penalty pad + man-up/down, no generic sections)
 export const ROLE_SECTIONS = {
   solo: ['scoring', 'shots', 'field', 'faceoffs'],
-  k1: ['scoring', 'shots', 'field'],
-  k2: ['faceoffs'],
-  k3: [], // penalties (v2)
+  k1: ['scoring', 'shots'],
+  k2: ['field', 'faceoffs'],
+  k3: [],
+};
+
+// ── Which roles can see/change the active goalie ───────────────────────────
+export const ROLE_SHOWS_GOALIE = {
+  solo: true,
+  k1: true,
+  k2: false,
+  k3: false,
+};
+
+// ── Which roles can control possession ──────────────────────────────────
+export const ROLE_SHOWS_POSSESSION = {
+  solo: true,
+  k1: false,
+  k2: false,
+  k3: false,
+};
+
+// ── Which roles see the penalty pad ─────────────────────────────────────
+export const ROLE_SHOWS_PENALTIES = {
+  solo: true,
+  k1: false,
+  k2: false,
+  k3: true,
+};
+
+// ── Which roles see the man-up/down strength toggle ─────────────────────
+// Scoring needs it (PP goals) and Penalties needs it (it's their job to
+// set it). Field doesn't depend on strength state.
+export const ROLE_SHOWS_STRENGTH = {
+  solo: true,
+  k1: true,
+  k2: false,
+  k3: true,
 };
 
 export const ROLE_LABELS = {
   solo: { label: 'Solo', sub: 'Track all stats', icon: '👤' },
-  k1: { label: 'Keeper 1', sub: 'Scoring + Field', icon: '1️⃣' },
-  k2: { label: 'Keeper 2', sub: 'Goalie + Faceoffs', icon: '2️⃣' },
-  k3: { label: 'Keeper 3', sub: 'Penalties only', icon: '3️⃣' },
+  k1: { label: 'Scoring', sub: 'Goals, Shots + Goalie', icon: '🥅' },
+  k2: { label: 'Field', sub: 'GB, Turnovers + Faceoffs', icon: '🏑' },
+  k3: { label: 'Penalties', sub: 'Penalties + Man-Up/Down', icon: '🚩' },
 };
 
 // ── Team color presets ─────────────────────────────────────────────────────

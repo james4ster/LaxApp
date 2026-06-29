@@ -62,6 +62,8 @@ export function useGame(players = DEMO_PLAYERS) {
     fo_w: 0,
     fo_l: 0,
     assist: 0,
+    pen_us: 0,
+    pen_them: 0,
   });
 
   // ── Per-player stats ─────────────────────────────────────────────────────
@@ -132,6 +134,18 @@ export function useGame(players = DEMO_PLAYERS) {
     [quarter]
   );
 
+  // ── Record a penalty (no timer — just a log entry + tally) ──────────────
+  const recordPenalty = useCallback((team, durationSec) => {
+    const key = team === 'us' ? 'pen_us' : 'pen_them';
+    setCounts((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
+
+    lastEvent.current = { key, playerId: null };
+    const mins = Math.floor(durationSec / 60);
+    const secs = durationSec % 60;
+    const durLabel = mins > 0 ? `${mins}:${secs < 10 ? '0' : ''}${secs}` : `${secs}s`;
+    setLastLabel(`Penalty (${durLabel}) — ${team === 'us' ? 'Us' : 'Them'}`);
+  }, []);
+
   // ── Undo last event ──────────────────────────────────────────────────────
   const undoLast = useCallback(() => {
     const ev = lastEvent.current;
@@ -177,6 +191,7 @@ export function useGame(players = DEMO_PLAYERS) {
     sogUs,
     // actions
     recordStat,
+    recordPenalty,
     undoLast,
     setQuarter,
     setActiveGoalie,
