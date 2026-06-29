@@ -1,0 +1,119 @@
+/* =====================================================
+   DESIGN TOKENS
+   Team colors injected at runtime from Supabase teams table.
+   Light/dark mode toggled by adding class="dk" to #root.
+   ===================================================== */
+:root {
+  /* Team palette — overridden per team via JS */
+  --tp: #1a6b3a; /* primary   */
+  --ts: #0b2e16; /* secondary / dark header bg */
+  --ta: #8fd14f; /* accent    */
+  --tpt: #ffffff; /* text on primary */
+  --tat: #0d2a0a; /* text on accent  */
+
+  /* Light mode surfaces */
+  --bg: #efefed;
+  --surf: #ffffff;
+  --surf2: #e6e6e3;
+  --surf3: #d8d8d4;
+  --txt: #111110;
+  --txt2: #6b6b68;
+  --bdr: rgba(0, 0, 0, 0.08);
+
+  /* Semantic */
+  --danger: #b91c1c;
+  --warn: #b45309;
+
+  /* Radius */
+  --r: 13px;
+}
+
+/* Dark mode — toggled on #root */
+.dk {
+  --bg: #111111;
+  --surf: #1d1d1d;
+  --surf2: #252525;
+  --surf3: #303030;
+  --txt: #f0f0ee;
+  --txt2: #888884;
+  --bdr: rgba(255, 255, 255, 0.07);
+}
+
+/* =====================================================
+     RESET
+     ===================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI',
+    sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Scrollable areas */
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Live pulse dot (reusable) */
+.live-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff3f3f;
+  animation: blink 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.live-dot-sm {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ff3f3f;
+  animation: blink 1s infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* Section divider used inside stat tables */
+.tbl-section-lbl {
+  padding: 5px 10px 3px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--txt2);
+  background: var(--surf2);
+  border-top: 1px solid var(--bdr);
+}
