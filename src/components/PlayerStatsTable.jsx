@@ -11,17 +11,17 @@ export default function PlayerStatsTable({
   svPct,
 }) {
   const [sortCol, setSortCol] = useState('pts');
-  const [sortDir, setSortDir] = useState(-1); // -1 = desc
+  const [sortDir, setSortDir] = useState(-1); // -1 = desc, 1 = asc
 
   const handleSort = (key) => {
-    if (sortCol === key) setSortDir((d) => d * -1);
-    else {
+    if (sortCol === key) {
+      setSortDir((d) => d * -1);
+    } else {
       setSortCol(key);
-      setSortDir(-1);
+      setSortDir(-1); // always start descending on new column
     }
   };
 
-  // Build sortable rows
   const rows = fieldPlayers
     .map((p) => {
       const ps = playerStats[p.id] ?? {};
@@ -38,27 +38,51 @@ export default function PlayerStatsTable({
       };
     })
     .sort((a, b) => {
+      // sortDir: -1 = descending (higher values first)
+      //          +1 = ascending  (lower values first)
       if (sortCol === 'name')
         return sortDir * (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-      if (sortCol === 'num') return sortDir * (a.num - b.num);
-      if (sortCol === 'fo') return sortDir * (b.fo_w - a.fo_w);
-      return sortDir * (b[sortCol] - a[sortCol]);
+      if (sortCol === 'num')
+        return sortDir * (a.num - b.num);
+      if (sortCol === 'fo')
+        // descending means more FO wins at top
+        return sortDir === -1 ? b.fo_w - a.fo_w : a.fo_w - b.fo_w;
+      // numeric columns: descending = b - a, ascending = a - b
+      return sortDir === -1
+        ? (b[sortCol] ?? 0) - (a[sortCol] ?? 0)
+        : (a[sortCol] ?? 0) - (b[sortCol] ?? 0);
     });
 
   const fTemplate = FIELD_COLS.map((c) => c.width).join(' ');
   const gTemplate = GOALIE_COLS.map((c) => c.width).join(' ');
 
+  const SortIcon = ({ colKey }) => {
+    const sk = colKey === 'fo' ? 'fo' : colKey;
+    const isActive = sortCol === sk;
+    // ▼ = descending (high→low), ▲ = ascending (low→high)
+    const arrow = isActive ? (sortDir === -1 ? '▼' : '▲') : '⇅';
+    return (
+      <span style={{
+        fontSize: 7,
+        opacity: isActive ? 1 : 0.3,
+        color: isActive ? 'var(--tp)' : 'inherit',
+        marginLeft: 2,
+      }}>
+        {arrow}
+      </span>
+    );
+  };
+
   return (
-    <div style={styles.tbl}>
-      {/* ── Field Players ── */}
+    <div style={S.tbl}>
+
+      {/* ── Field Players ─────────────────────────────────── */}
       <div className="tbl-section-lbl" style={{ borderTop: 'none' }}>
         Field Players
       </div>
 
       {/* Header */}
-      <div
-        style={{ ...styles.row, ...styles.hdr, gridTemplateColumns: fTemplate }}
-      >
+      <div style={{ ...S.row, ...S.hdr, gridTemplateColumns: fTemplate }}>
         {FIELD_COLS.map((c) => {
           const sk = c.key === 'fo' ? 'fo' : c.key;
           const isActive = sortCol === sk;
@@ -67,25 +91,21 @@ export default function PlayerStatsTable({
               key={c.key}
               onClick={() => handleSort(sk)}
               style={{
-                ...styles.hdrCell,
+                ...S.hdrCell,
                 textAlign: c.align,
+                color: isActive ? 'var(--tp)' : 'var(--txt2)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent:
-                  c.align === 'center'
-                    ? 'center'
-                    : c.align === 'right'
-                    ? 'flex-end'
-                    : 'flex-start',
-                gap: 2,
-                color: isActive ? 'var(--tp)' : 'var(--txt2)',
+                  c.align === 'center' ? 'center'
+                  : c.align === 'right' ? 'flex-end'
+                  : 'flex-start',
+                gap: 1,
               }}
             >
               {c.label}
-              <span style={{ fontSize: 7, opacity: isActive ? 1 : 0.35 }}>
-                {isActive ? (sortDir === -1 ? '▼' : '▲') : '⇅'}
-              </span>
+              <SortIcon colKey={c.key} />
             </div>
           );
         })}
@@ -93,56 +113,39 @@ export default function PlayerStatsTable({
 
       {/* Data rows */}
       {rows.map((r) => (
-        <div
-          key={r.id}
-          style={{ ...styles.row, gridTemplateColumns: fTemplate }}
-        >
-          <div style={styles.pNum}>{r.num}</div>
-          <div style={styles.pName}>
+        <div key={r.id} style={{ ...S.row, gridTemplateColumns: fTemplate }}>
+          <div style={S.pNum}>{r.num}</div>
+          <div style={S.pName}>
             {r.name}
-            {r.pos === 'FOGO' && <span style={styles.fogoTag}>FOGO</span>}
+            {r.pos === 'FOGO' && <span style={S.fogoTag}>FOGO</span>}
           </div>
-          <div
-            style={{
-              ...styles.val,
-              color: r.g > 0 ? 'var(--tp)' : 'var(--txt)',
-            }}
-          >
+          <div style={{ ...S.val, color: r.g > 0 ? 'var(--tp)' : 'var(--txt2)', fontWeight: r.g > 0 ? 800 : 400 }}>
             {r.g}
           </div>
-          <div
-            style={{
-              ...styles.val,
-              color: r.a > 0 ? 'var(--tp)' : 'var(--txt)',
-            }}
-          >
+          <div style={{ ...S.val, color: r.a > 0 ? 'var(--tp)' : 'var(--txt2)', fontWeight: r.a > 0 ? 800 : 400 }}>
             {r.a}
           </div>
-          <div
-            style={{
-              ...styles.val,
-              fontWeight: 800,
-              color: r.pts > 0 ? 'var(--tp)' : 'var(--txt)',
-            }}
-          >
+          <div style={{ ...S.val, color: r.pts > 0 ? 'var(--tp)' : 'var(--txt2)', fontWeight: r.pts > 0 ? 800 : 400 }}>
             {r.pts}
           </div>
-          <div style={styles.val}>{r.gb}</div>
-          <div style={styles.val}>{r.to}</div>
-          <div style={{ ...styles.val, fontSize: 10 }}>
+          <div style={{ ...S.val, color: r.gb > 0 ? 'var(--txt)' : 'var(--txt2)' }}>
+            {r.gb}
+          </div>
+          <div style={{ ...S.val, color: r.to > 0 ? 'var(--danger)' : 'var(--txt2)' }}>
+            {r.to}
+          </div>
+          <div style={{ ...S.val, fontSize: 10, color: 'var(--txt2)' }}>
             {r.fo_w}-{r.fo_l}
           </div>
         </div>
       ))}
 
-      {/* ── Goalies ── */}
+      {/* ── Goalies ───────────────────────────────────────── */}
       <div className="tbl-section-lbl">Goalies</div>
 
-      <div
-        style={{ ...styles.row, ...styles.hdr, gridTemplateColumns: gTemplate }}
-      >
+      <div style={{ ...S.row, ...S.hdr, gridTemplateColumns: gTemplate }}>
         {GOALIE_COLS.map((c) => (
-          <div key={c.key} style={{ ...styles.hdrCell, textAlign: c.align }}>
+          <div key={c.key} style={{ ...S.hdrCell, textAlign: c.align }}>
             {c.label}
           </div>
         ))}
@@ -150,24 +153,21 @@ export default function PlayerStatsTable({
 
       {goalies.map((g) => {
         const isActive = g.id === activeGoalie?.id;
-        const sv = isActive ? saves : 0;
-        const gag = isActive ? ga : 0;
-        const svp = isActive ? svPct : '–';
+        const sv  = isActive ? saves : 0;
+        const gag = isActive ? ga    : 0;
+        const svp = isActive
+          ? (typeof svPct === 'function' ? svPct() : svPct)
+          : '–';
         return (
-          <div
-            key={g.id}
-            style={{ ...styles.row, gridTemplateColumns: gTemplate }}
-          >
-            <div style={styles.pNum}>{g.num}</div>
-            <div style={styles.pName}>
+          <div key={g.id} style={{ ...S.row, gridTemplateColumns: gTemplate }}>
+            <div style={S.pNum}>{g.num}</div>
+            <div style={S.pName}>
               {g.name}
-              {isActive && <span style={styles.inTag}>IN</span>}
+              {isActive && <span style={S.inTag}>IN</span>}
             </div>
-            <div style={styles.val}>{sv}</div>
-            <div style={styles.val}>{gag}</div>
-            <div style={{ ...styles.val, color: 'var(--tp)', fontWeight: 800 }}>
-              {svp}
-            </div>
+            <div style={S.val}>{sv}</div>
+            <div style={S.val}>{gag}</div>
+            <div style={{ ...S.val, color: 'var(--tp)', fontWeight: 800 }}>{svp}</div>
           </div>
         );
       })}
@@ -175,7 +175,7 @@ export default function PlayerStatsTable({
   );
 }
 
-const styles = {
+const S = {
   tbl: {
     background: 'var(--surf)',
     borderRadius: 11,
@@ -185,12 +185,14 @@ const styles = {
   },
   row: {
     display: 'grid',
-    padding: '5px 9px',
+    padding: '6px 10px',
     borderTop: '1px solid var(--bdr)',
     alignItems: 'center',
-    gap: 0,
+    gap: 2,
   },
-  hdr: { background: 'var(--surf2)', cursor: 'default' },
+  hdr: {
+    background: 'var(--surf2)',
+  },
   hdrCell: {
     fontSize: 9,
     fontWeight: 700,
@@ -203,7 +205,7 @@ const styles = {
     fontWeight: 700,
     color: 'var(--txt2)',
     textAlign: 'right',
-    paddingRight: 3,
+    paddingRight: 4,
   },
   pName: {
     fontSize: 11,
@@ -212,11 +214,11 @@ const styles = {
     paddingLeft: 5,
     display: 'flex',
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
   },
   val: {
-    fontSize: 12,
-    fontWeight: 700,
+    fontSize: 13,
+    fontWeight: 600,
     textAlign: 'center',
     color: 'var(--txt)',
   },
@@ -225,7 +227,10 @@ const styles = {
     fontWeight: 700,
     color: 'var(--ta)',
     textTransform: 'uppercase',
-    marginLeft: 3,
   },
-  inTag: { fontSize: 7, fontWeight: 700, color: 'var(--ta)', marginLeft: 3 },
+  inTag: {
+    fontSize: 7,
+    fontWeight: 700,
+    color: 'var(--ta)',
+  },
 };
