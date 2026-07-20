@@ -6,50 +6,58 @@ import LiveView from './pages/LiveView';
 import Setup from './pages/Setup';
 import { useGame } from './hooks/useGame';
 import { usePossession } from './hooks/usePossession';
+import { useGameContext } from './hooks/useGameContext';
 import { useTheme } from './hooks/useTheme';
 import { useStrength } from './hooks/useStrength';
 import './styles/globals.css';
 
+// TODO: replace with real game-selection screen once GameSelect is wired up
+const ACTIVE_GAME_ID = 'ac84353f-3354-4cbc-8bdf-cb86763edea1';
+
 export default function App() {
-  const [tab, setTab] = useState('track');
-  const [role, setRole] = useState('solo');
+  const [tab,       setTab]       = useState('track');
+  const [role,      setRole]      = useState('solo');
   const [gameEnded, setGameEnded] = useState(false);
 
-  // ── Hooks ────────────────────────────────────────────────────────────────
-  const {
-    counts,
-    playerStats,
-    quarter,
-    activeGoalie,
-    lastLabel,
-    goalies,
-    fieldPlayers,
-    gc,
-    saves,
-    svPct,
-    sogUs,
-    recordStat,
-    recordPenalty,
-    undoLast,
-    setQuarter,
-    setActiveGoalie,
-  } = useGame();
+  const gameId = ACTIVE_GAME_ID;
 
-  const { possState, usMs, themMs, usPct, themPct, totalMs, setPoss } =
-    usePossession();
+  // ── Game context (resolves home/away for this specific game) ─────────
+  const { isHome } = useGameContext(gameId);
+
+  // ── Core hooks ────────────────────────────────────────────────────────
+  const {
+    counts, playerStats, quarterStats,
+    quarter, activeGoalie, lastLabel,
+    goalies, fieldPlayers,
+    gc, qc, saves, svPct, sogUs,
+    recordStat, recordPenalty, undoLast,
+    setQuarter, setActiveGoalie,
+  } = useGame(gameId);
+
+  const {
+    possState, usMs, themMs, usPct, themPct, totalMs, setPoss,
+  } = usePossession(gameId, isHome ?? true);
+
   const { strength, setStrength } = useStrength();
 
   const {
-    isDark,
-    themeMode,
-    activePreset,
-    toggleDark,
-    setTheme,
-    applyPreset,
-    applyCustom,
+    isDark, themeMode, activePreset,
+    toggleDark, setTheme, applyPreset, applyCustom,
   } = useTheme();
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────
+  const handleEndGame = () => {
+    setGameEnded(true);
+    setPoss('none'); // stop possession clock immediately
+    // TODO: write final score to games table once fully wired
+  };
+
+  // Thread current strength into stat recording so goals get tagged PP/PK
+  const handleRecordStat = (key, player, location) => {
+    recordStat(key, player, location, strength);
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────
   return (
     <div style={styles.app}>
       <ScoreStrip
@@ -61,17 +69,14 @@ export default function App() {
         onToggleDark={toggleDark}
       />
 
-      {/* Pages — all mounted, visibility toggled via display */}
-      <div
-        style={{ ...styles.page, display: tab === 'track' ? 'flex' : 'none' }}
-      >
+      <div style={{ ...styles.page, display: tab === 'track' ? 'flex' : 'none' }}>
         <Track
           counts={counts}
           fieldPlayers={fieldPlayers}
           goalies={goalies}
           activeGoalie={activeGoalie}
           onChangeGoalie={setActiveGoalie}
-          onRecordStat={recordStat}
+          onRecordStat={handleRecordStat}
           lastLabel={lastLabel}
           onUndo={undoLast}
           saves={saves()}
@@ -85,13 +90,11 @@ export default function App() {
           totalMs={totalMs}
           onSetPoss={setPoss}
           role={role}
-          onEndGame={() => {
-            setGameEnded(true);
-            // TODO: persist final score to Supabase once game_id is wired up
-          }}
+          onEndGame={handleEndGame}
           onRecordPenalty={recordPenalty}
           strength={strength}
           onSetStrength={setStrength}
+          gameEnded={gameEnded}
         />
       </div>
 
@@ -102,6 +105,7 @@ export default function App() {
           quarter={quarter}
           counts={counts}
           gc={gc}
+          qc={qc}
           sogUs={sogUs}
           svPct={svPct}
           usMs={usMs}
@@ -113,12 +117,12 @@ export default function App() {
           activeGoalie={activeGoalie}
           saves={saves()}
           ga={counts.ogoal}
+          quarterStats={quarterStats}
+          gameEnded={gameEnded}
         />
       </div>
 
-      <div
-        style={{ ...styles.page, display: tab === 'setup' ? 'flex' : 'none' }}
-      >
+      <div style={{ ...styles.page, display: tab === 'setup' ? 'flex' : 'none' }}>
         <Setup
           role={role}
           onRoleChange={setRole}
@@ -137,18 +141,18 @@ export default function App() {
 
 const styles = {
   app: {
-    maxWidth: 480,
-    margin: '0 auto',
-    height: '100dvh',
-    display: 'flex',
+    maxWidth:  480,
+    margin:    '0 auto',
+    height:    '100dvh',
+    display:   'flex',
     flexDirection: 'column',
-    overflow: 'hidden',
-    position: 'relative',
+    overflow:  'hidden',
+    position:  'relative',
   },
   page: {
-    flex: 1,
+    flex:      1,
     flexDirection: 'column',
-    overflow: 'hidden',
+    overflow:  'hidden',
     minHeight: 0,
   },
 };
