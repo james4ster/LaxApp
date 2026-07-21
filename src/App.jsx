@@ -17,7 +17,12 @@ const ACTIVE_GAME_ID = 'ac84353f-3354-4cbc-8bdf-cb86763edea1';
 export default function App() {
   const [tab,       setTab]       = useState('track');
   const [role,      setRole]      = useState('solo');
-  const [gameEnded, setGameEnded] = useState(false);
+  
+  const [gameEnded, setGameEnded] = useState(() => {
+    // Restore ended state across refreshes, keyed by gameId so it's game-specific
+    try { return localStorage.getItem(`game_ended_${ACTIVE_GAME_ID}`) === 'true'; }
+    catch { return false; }
+  });
 
   const gameId = ACTIVE_GAME_ID;
 
@@ -48,7 +53,9 @@ export default function App() {
   // ── Handlers ──────────────────────────────────────────────────────────
   const handleEndGame = () => {
     setGameEnded(true);
-    setPoss('none'); // stop possession clock immediately
+    setPoss('none');
+    try { localStorage.setItem(`game_ended_${ACTIVE_GAME_ID}`, 'true'); }
+    catch { /* storage unavailable — non-fatal */ }
     // TODO: write final score to games table once fully wired
   };
 

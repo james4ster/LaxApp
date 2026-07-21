@@ -126,8 +126,8 @@ function Scoreboard({ scoreUs, scoreThem, quarter, usMs, themMs, gameEnded }) {
           ))}
         </div>
       </div>
-
-      {/* Score row */}
+{ /* COMMENTED THIS OUT TO REMOVE 2ND SCORE DISPLAY
+      
       <div style={SB.scoreRow}>
         <div style={SB.teamBlock}>
           <div style={SB.teamName}>US</div>
@@ -141,7 +141,7 @@ function Scoreboard({ scoreUs, scoreThem, quarter, usMs, themMs, gameEnded }) {
           <div style={{ ...SB.score, color: '#fff' }}>{scoreThem}</div>
         </div>
       </div>
-
+*/ }
       {/* Possession row */}
       <div style={SB.possRow}>
         <div style={{ ...SB.possItem, background: 'rgba(143,209,79,.13)' }}>
@@ -210,29 +210,34 @@ const SB = {
 
 // ── Quarter Breakdown Panel ───────────────────────────────────────────────────
 function QuarterBreakdown({ quarterStats, currentQuarter }) {
-  const quarters = [1,2,3,4].filter(q => q <= currentQuarter);
-
-  // Don't render until there's at least one event in Q1
-  const hasAnyData = quarters.some(q => {
-    const b = quarterStats[String(q)];
-    return b && (b.goal > 0 || b.ogoal > 0 || b.sog > 0 || b.oshot > 0);
-  });
-  if (!hasAnyData) return null;
+  // Always show Q1–Q4; add OT column only if game has reached OT
+  const allQuarters = currentQuarter === 'OT' ? [1,2,3,4,'OT'] : [1,2,3,4];
 
   const qc = (q, key) => quarterStats[String(q)]?.[key] ?? 0;
+
+  const isFuture = (q) => {
+    if (currentQuarter === 'OT') return false; // all quarters are past/current in OT
+    return q > currentQuarter;
+  };
+
+  const isActive = (q) => q === currentQuarter;
 
   return (
     <div style={QB.panel}>
 
       {/* Column headers */}
       <div style={QB.headerRow}>
-        <div style={{ ...QB.cell, ...QB.labelHdr }}></div>
-        {quarters.map(q => (
+        <div style={{ ...QB.cell, ...QB.labelHdr }} />
+        {allQuarters.map(q => (
           <div key={q} style={{
             ...QB.cell, ...QB.qHdr,
-            color: q === currentQuarter ? 'var(--ta)' : 'rgba(255,255,255,.45)',
+            color: isActive(q)
+              ? 'var(--ta)'
+              : isFuture(q)
+              ? 'rgba(255,255,255,.2)'
+              : 'rgba(255,255,255,.45)',
           }}>
-            Q{q}
+            {q === 'OT' ? 'OT' : `Q${q}`}
           </div>
         ))}
       </div>
@@ -243,11 +248,18 @@ function QuarterBreakdown({ quarterStats, currentQuarter }) {
           <span style={{ ...QB.dot, background: 'var(--ta)' }} />
           Goals
         </div>
-        {quarters.map(q => {
+        {allQuarters.map(q => {
           const v = qc(q, 'goal');
+          const future = isFuture(q);
           return (
-            <div key={q} style={{ ...QB.cell, ...QB.dataVal, color: v > 0 ? 'var(--ta)' : 'rgba(255,255,255,.3)', fontWeight: v > 0 ? 800 : 400 }}>
-              {v}
+            <div key={q} style={{
+              ...QB.cell, ...QB.dataVal,
+              color: future ? 'rgba(255,255,255,.15)'
+                   : v > 0  ? 'var(--ta)'
+                   :           'rgba(255,255,255,.3)',
+              fontWeight: v > 0 && !future ? 800 : 400,
+            }}>
+              {future ? '–' : v}
             </div>
           );
         })}
@@ -259,11 +271,17 @@ function QuarterBreakdown({ quarterStats, currentQuarter }) {
           <span style={{ ...QB.dot, background: 'var(--ta)', opacity: .45 }} />
           SOG
         </div>
-        {quarters.map(q => (
-          <div key={q} style={{ ...QB.cell, ...QB.dataVal, color: 'rgba(255,255,255,.5)' }}>
-            {qc(q, 'sog')}
-          </div>
-        ))}
+        {allQuarters.map(q => {
+          const future = isFuture(q);
+          return (
+            <div key={q} style={{
+              ...QB.cell, ...QB.dataVal,
+              color: future ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.5)',
+            }}>
+              {future ? '–' : qc(q, 'sog')}
+            </div>
+          );
+        })}
       </div>
 
       <div style={QB.divider} />
@@ -274,11 +292,18 @@ function QuarterBreakdown({ quarterStats, currentQuarter }) {
           <span style={{ ...QB.dot, background: '#e53e3e' }} />
           Goals
         </div>
-        {quarters.map(q => {
+        {allQuarters.map(q => {
           const v = qc(q, 'ogoal');
+          const future = isFuture(q);
           return (
-            <div key={q} style={{ ...QB.cell, ...QB.dataVal, color: v > 0 ? '#ff8080' : 'rgba(255,255,255,.3)', fontWeight: v > 0 ? 800 : 400 }}>
-              {v}
+            <div key={q} style={{
+              ...QB.cell, ...QB.dataVal,
+              color: future ? 'rgba(255,255,255,.15)'
+                   : v > 0  ? '#ff8080'
+                   :           'rgba(255,255,255,.3)',
+              fontWeight: v > 0 && !future ? 800 : 400,
+            }}>
+              {future ? '–' : v}
             </div>
           );
         })}
@@ -290,11 +315,17 @@ function QuarterBreakdown({ quarterStats, currentQuarter }) {
           <span style={{ ...QB.dot, background: '#e53e3e', opacity: .45 }} />
           SOG
         </div>
-        {quarters.map(q => (
-          <div key={q} style={{ ...QB.cell, ...QB.dataVal, color: 'rgba(255,255,255,.38)' }}>
-            {qc(q, 'oshot')}
-          </div>
-        ))}
+        {allQuarters.map(q => {
+          const future = isFuture(q);
+          return (
+            <div key={q} style={{
+              ...QB.cell, ...QB.dataVal,
+              color: future ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.38)',
+            }}>
+              {future ? '–' : qc(q, 'oshot')}
+            </div>
+          );
+        })}
       </div>
 
     </div>
