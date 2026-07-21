@@ -12,7 +12,7 @@ import { setPossession, endPossession } from '../lib/possessionService';
  * (optimistic, so trackers never wait on network), while writes happen in
  * the background and a realtime subscription keeps all viewers in sync.
  */
-export function usePossession(gameId = null, isHome = true) {
+export function usePossession(gameId = null, isHome = null) {
   
   useEffect(() => {
     console.log("🚨 usePossession mounted", gameId);
@@ -64,7 +64,8 @@ export function usePossession(gameId = null, isHome = true) {
       let current = null;
   
       // Translate DB teams to what the user sees
-      const usTeam = isHome ? 'home' : 'away';
+      if (isHome === null) return; // guard: shouldn't reach here but be safe
+      const usTeam   = isHome ? 'home' : 'away';
       const themTeam = isHome ? 'away' : 'home';
 
       console.log("TEAM MAP", {
@@ -72,7 +73,7 @@ export function usePossession(gameId = null, isHome = true) {
         usTeam,
         themTeam
       });
-      
+
   
       for (const e of events) {
         const start = new Date(e.started_at).getTime();
@@ -129,7 +130,7 @@ export function usePossession(gameId = null, isHome = true) {
 
   // ── Load + realtime sync (only when a real game is wired up) ───────────
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId || isHome === null) return; // wait until home/away is resolved
     let cancelled = false;
 
     supabase

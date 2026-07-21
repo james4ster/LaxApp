@@ -19,7 +19,7 @@ export default function App() {
   const [role,      setRole]      = useState('solo');
   
   console.log("GAME CONTEXT isHome:", isHome);
-  
+
   const [gameEnded, setGameEnded] = useState(() => {
     // Restore ended state across refreshes, keyed by gameId so it's game-specific
     try { return localStorage.getItem(`game_ended_${ACTIVE_GAME_ID}`) === 'true'; }
@@ -43,7 +43,7 @@ export default function App() {
 
   const {
     possState, usMs, themMs, usPct, themPct, totalMs, setPoss,
-  } = usePossession(gameId, isHome ?? true);
+  } = usePossession(gameId, isHome); // null until useGameContext resolves — intentional
 
   const { strength, setStrength } = useStrength();
 
