@@ -94,25 +94,42 @@ export function usePossession(gameId = null, isHome = true) {
         applyEvents(eventsRef.current);
       });
 
-    const channel = supabase
+      const channel = supabase
       .channel(`possession-${gameId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'possession_events', filter: `game_id=eq.${gameId}` },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'possession_events',
+          filter: `game_id=eq.${gameId}`
+        },
         (payload) => {
+          console.log('🔥 REALTIME EVENT RECEIVED:', payload);
+    
           if (payload.eventType === 'INSERT') {
+            console.log('➕ INSERT:', payload.new);
             eventsRef.current = [...eventsRef.current, payload.new];
+    
           } else if (payload.eventType === 'UPDATE') {
+            console.log('✏️ UPDATE:', payload.new);
             eventsRef.current = eventsRef.current.map((e) =>
               e.id === payload.new.id ? payload.new : e
             );
+    
           } else if (payload.eventType === 'DELETE') {
-            eventsRef.current = eventsRef.current.filter((e) => e.id !== payload.old.id);
+            console.log('🗑 DELETE:', payload.old);
+            eventsRef.current = eventsRef.current.filter((e) =>
+              e.id !== payload.old.id
+            );
           }
+    
           applyEvents(eventsRef.current);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Realtime status:', status);
+      });
 
     return () => {
       cancelled = true;
