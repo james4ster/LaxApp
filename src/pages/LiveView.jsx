@@ -211,9 +211,22 @@ const SB = {
 // ── Quarter Breakdown Panel ───────────────────────────────────────────────────
 function QuarterBreakdown({ quarterStats, currentQuarter }) {
   // Always show Q1–Q4; add OT column only if game has reached OT
-  const allQuarters = currentQuarter === 'OT' ? [1,2,3,4,'OT'] : [1,2,3,4];
+  const allQuarters =
+  currentQuarter === 'OT2'
+    ? [1,2,3,4,'OT','OT2']
+    : currentQuarter === 'OT'
+    ? [1,2,3,4,'OT']
+    : [1,2,3,4];
 
-  const qc = (q, key) => quarterStats[String(q)]?.[key] ?? 0;
+  // Convert OT to numeric
+  const qc = (q, key) => {
+    const lookup =
+      q === 'OT' ? '5' :
+      q === 'OT2' ? '6' :
+      String(q);
+  
+    return quarterStats[lookup]?.[key] ?? 0;
+  };
 
   // hide if no data AND ahead of current quarter:
   const quartersWithData = new Set(

@@ -4,6 +4,7 @@ export const MY_TEAM_ID = 'ac84353f-3354-4cbc-8bdf-cb86763edea1';
 // ── Stat keys that require player attribution ──────────────────────────────
 export const NEEDS_PLAYER = new Set([
   'goal',
+  'sog',
   'miss',
   'gb',
   'cto',
