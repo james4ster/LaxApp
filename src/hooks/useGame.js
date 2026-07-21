@@ -113,6 +113,8 @@ function applyEvent(state, ev) {
 }
 
 export function useGame(gameId = null, players = DEMO_PLAYERS) {
+  const localEventIds = useRef(new Set()); // supress trackers insert
+
   const goalies = players.filter((p) => p.pos === 'G');
   const fieldPlayers = players.filter((p) => p.pos !== 'G');
 
@@ -126,38 +128,125 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   const [lastLabel, setLastLabel] = useState('–');
 
   // ── Rebuild everything from game_events on mount / when gameId changes ──
-  useEffect(() => {
-    if (!gameId) return;
-    let cancelled = false;
+// ── Load history on mount ──────────────────────────────────────────────
+useEffect(() => {
+  if (!gameId) return;
+  let cancelled = false;
 
-    supabase
-      .from('game_events')
-      .select('*')
-      .eq('game_id', gameId)
-      .order('created_at', { ascending: true })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          console.error('useGame: failed to load game_events history', error);
-          return;
-        }
-        let state = {
-          counts: { ...EMPTY_COUNTS },
-          playerStats: initPlayerStats(players),
-          quarterStats: {},
-        };
-        for (const ev of data || []) {
-          state = applyEvent(state, ev);
-        }
-        setCounts(state.counts);
-        setPlayerStats(state.playerStats);
-        setQuarterStats(state.quarterStats);
-      });
+  supabase
+    .from('game_events')
+    .select('*')
+    .eq('game_id', gameId)
+    .order('created_at', { ascending: true })
+    .then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        console.error('useGame: failed to load game_events history', error);
+        return;
+      }
+      let state = {
+        counts: { ...EMPTY_COUNTS },
+        playerStats: initPlayerStats(players),
+        quarterStats: {},
+      };
+      for (const ev of data || []) {
+        state = applyEvent(state, ev);
+      }
+      setCounts(state.counts);
+      setPlayerStats(state.playerStats);
+      setQuarterStats(state.quarterStats);
+    });
 
-    return () => { cancelled = true; };
-    // players intentionally omitted — roster is static for a given game session
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameId]);
+  return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [gameId]);
+
+
+
+
+  // ── Realtime subscription — keeps all viewers in sync ──────────────────
+useEffect(() => {
+  if (!gameId) return;
+
+  const channel = supabase
+    .channel(`game-events-${gameId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'game_events',
+        filter: `game_id=eq.${gameId}`,
+      },
+      (payload) => {
+        const ev = payload.new;
+        if (localEventIds.current.has(ev.client_event_id)) {
+          localEventIds.current.delete(ev.client_event_id); // clean up
+          return; // skip — we already applied this optimistically
+        }
+
+        // Apply the new event to all three state slices atomically
+        setCounts((prev) => {
+          const { counts: next } = applyEvent(
+            { counts: prev, playerStats: {}, quarterStats: {} },
+            ev
+          );
+          return next;
+        });
+
+        setPlayerStats((prev) => {
+          const { playerStats: next } = applyEvent(
+            { counts: {}, playerStats: prev, quarterStats: {} },
+            ev
+          );
+          return next;
+        });
+
+        setQuarterStats((prev) => {
+          const { quarterStats: next } = applyEvent(
+            { counts: {}, playerStats: {}, quarterStats: prev },
+            ev
+          );
+          return next;
+        });
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'game_events',
+        filter: `game_id=eq.${gameId}`,
+      },
+      () => {
+        // On delete (undo), simplest safe approach: full reload from DB
+        // since reversing a single event from state is complex
+        supabase
+          .from('game_events')
+          .select('*')
+          .eq('game_id', gameId)
+          .order('created_at', { ascending: true })
+          .then(({ data }) => {
+            if (!data) return;
+            let state = {
+              counts: { ...EMPTY_COUNTS },
+              playerStats: initPlayerStats(players),
+              quarterStats: {},
+            };
+            for (const ev of data) {
+              state = applyEvent(state, ev);
+            }
+            setCounts(state.counts);
+            setPlayerStats(state.playerStats);
+            setQuarterStats(state.quarterStats);
+          });
+      }
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}, [gameId]);
 
   const gc = useCallback((k) => counts[k] ?? 0, [counts]);
   const saves = useCallback(
@@ -210,6 +299,8 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
 
       if (gameId) {
         const clientEventId = crypto.randomUUID();
+        localEventIds.current.add(clientEventId);
+
         const { data, error } = await supabase
           .from('game_events')
           .insert({
