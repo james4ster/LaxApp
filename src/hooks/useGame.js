@@ -3,20 +3,20 @@ import { supabase } from '../lib/supabase';
 import { NEEDS_PLAYER, STAT_LABELS } from '../lib/constants';
 
 export const DEMO_PLAYERS = [
-  { id: 'p1', num: 1, name: 'Hayes', pos: 'G' },
-  { id: 'p2', num: 3, name: 'Miller', pos: 'ATT' },
-  { id: 'p3', num: 5, name: 'Osei', pos: 'MID' },
-  { id: 'p4', num: 7, name: 'Chen', pos: 'ATT' },
-  { id: 'p5', num: 9, name: 'Walsh', pos: 'DEF' },
-  { id: 'p6', num: 11, name: 'Torres', pos: 'ATT' },
-  { id: 'p7', num: 12, name: 'Grant', pos: 'MID' },
-  { id: 'p8', num: 14, name: 'Park', pos: 'FOGO' },
-  { id: 'p9', num: 17, name: 'Nguyen', pos: 'DEF' },
-  { id: 'p10', num: 20, name: 'Scott', pos: 'MID' },
-  { id: 'p11', num: 22, name: 'Davis', pos: 'DEF' },
-  { id: 'p12', num: 27, name: 'Reed', pos: 'ATT' },
-  { id: 'p13', num: 30, name: 'Reid', pos: 'G' },
-  { id: 'p14', num: 44, name: 'Burke', pos: 'DEF' },
+  { id: 'p1',  num: 1,  name: 'Hayes',   pos: 'G'    },
+  { id: 'p2',  num: 3,  name: 'Miller',  pos: 'ATT'  },
+  { id: 'p3',  num: 5,  name: 'Osei',    pos: 'MID'  },
+  { id: 'p4',  num: 7,  name: 'Chen',    pos: 'ATT'  },
+  { id: 'p5',  num: 9,  name: 'Walsh',   pos: 'DEF'  },
+  { id: 'p6',  num: 11, name: 'Torres',  pos: 'ATT'  },
+  { id: 'p7',  num: 12, name: 'Grant',   pos: 'MID'  },
+  { id: 'p8',  num: 14, name: 'Park',    pos: 'FOGO' },
+  { id: 'p9',  num: 17, name: 'Nguyen',  pos: 'DEF'  },
+  { id: 'p10', num: 20, name: 'Scott',   pos: 'MID'  },
+  { id: 'p11', num: 22, name: 'Davis',   pos: 'DEF'  },
+  { id: 'p12', num: 27, name: 'Reed',    pos: 'ATT'  },
+  { id: 'p13', num: 30, name: 'Reid',    pos: 'G'    },
+  { id: 'p14', num: 44, name: 'Burke',   pos: 'DEF'  },
 ];
 
 const EMPTY_COUNTS = {
@@ -24,19 +24,18 @@ const EMPTY_COUNTS = {
   gb: 0, gbt: 0, cto: 0, to: 0, interc: 0,
   fo_w: 0, fo_l: 0, assist: 0,
   pen_us: 0, pen_them: 0, pen_us_sec: 0, pen_them_sec: 0,
-  goal_pp: 0, goal_pk: 0, ogoal_pp: 0, ogoal_pk: 0, // strength-tagged goals
+  goal_pp: 0, goal_pk: 0, ogoal_pp: 0, ogoal_pk: 0,
 };
 
-// Helper to convert OT to integer
 const periodToInt = (q) => {
-  if (q === 'OT') return 5;
+  if (q === 'OT')  return 5;
   if (q === 'OT2') return 6;
   return Number(q);
 };
 
 function initPlayerStats(players) {
   const map = {};
-  players.forEach((p) => {
+  players.forEach(p => {
     map[p.id] = { g: 0, a: 0, gb: 0, to: 0, fo_w: 0, fo_l: 0, pen: 0, sog: 0 };
   });
   return map;
@@ -46,12 +45,9 @@ function emptyQuarterBucket() {
   return { goal: 0, ogoal: 0, sog: 0, oshot: 0 };
 }
 
-// ── Apply a single event onto running counts/playerStats/quarterStats ─────
-// Shared by both live recording and history rebuild, so the two paths can
-// never silently drift apart.
 function applyEvent(state, ev) {
   const { stat_key: key, player_id, period, strength, value } = ev;
-  const counts = { ...state.counts };
+  const counts      = { ...state.counts };
   const playerStats = { ...state.playerStats };
   const quarterStats = { ...state.quarterStats };
 
@@ -66,381 +62,275 @@ function applyEvent(state, ev) {
     return { counts, playerStats, quarterStats };
   }
 
-  // Normal stat
   counts[key] = (counts[key] ?? 0) + 1;
-  if (key === 'goal') counts.sog = (counts.sog ?? 0) + 1;
+  if (key === 'goal')  counts.sog   = (counts.sog   ?? 0) + 1;
   if (key === 'ogoal') counts.oshot = (counts.oshot ?? 0) + 1;
 
-  // Strength-tagged scoring (only meaningful for goal/ogoal)
   if (strength && strength !== 'even') {
     if (key === 'goal') {
-      counts[strength === 'man_up' ? 'goal_pp' : 'goal_pk'] =
-        (counts[strength === 'man_up' ? 'goal_pp' : 'goal_pk'] ?? 0) + 1;
+      const k = strength === 'man_up' ? 'goal_pp' : 'goal_pk';
+      counts[k] = (counts[k] ?? 0) + 1;
     }
     if (key === 'ogoal') {
-      // from our perspective: opponent scoring while WE are man_up means
-      // it's a shorthanded goal against (rare); man_down means a power-play
-      // goal against. Mirror logic to goal_pp/pk but on the against side.
-      counts[strength === 'man_down' ? 'ogoal_pp' : 'ogoal_pk'] =
-        (counts[strength === 'man_down' ? 'ogoal_pp' : 'ogoal_pk'] ?? 0) + 1;
+      const k = strength === 'man_down' ? 'ogoal_pp' : 'ogoal_pk';
+      counts[k] = (counts[k] ?? 0) + 1;
     }
   }
 
-  // Per-quarter bucket (only track the four shot/goal keys for now)
   if (period != null && ['goal', 'ogoal', 'sog', 'oshot'].includes(key)) {
-    const qKey = String(period);
+    const qKey  = String(period);
     const bucket = { ...(quarterStats[qKey] ?? emptyQuarterBucket()) };
-    bucket[key] = (bucket[key] ?? 0) + 1;
-    if (key === 'goal') bucket.sog = (bucket.sog ?? 0) + 1;
+    bucket[key]  = (bucket[key] ?? 0) + 1;
+    if (key === 'goal')  bucket.sog   = (bucket.sog   ?? 0) + 1;
     if (key === 'ogoal') bucket.oshot = (bucket.oshot ?? 0) + 1;
     quarterStats[qKey] = bucket;
   }
 
-  // Per-player
   if (player_id && playerStats[player_id]) {
     const ps = { ...playerStats[player_id] };
-    if (key === 'goal') { ps.g++; ps.sog++; }
-    if (key === 'sog') ps.sog++;
+    if (key === 'goal')   { ps.g++; ps.sog++; }
+    if (key === 'sog')    ps.sog++;
     if (key === 'assist') ps.a++;
-    if (key === 'gb') ps.gb++;
-    if (key === 'to') ps.to++;
-    if (key === 'fo_w') ps.fo_w++;
-    if (key === 'fo_l') ps.fo_l++;
+    if (key === 'gb')     ps.gb++;
+    if (key === 'to')     ps.to++;
+    if (key === 'fo_w')   ps.fo_w++;
+    if (key === 'fo_l')   ps.fo_l++;
     playerStats[player_id] = ps;
   }
 
   return { counts, playerStats, quarterStats };
 }
 
+// Full rebuild from an event array — used for history load and undo
+function rebuildFromEvents(events, players) {
+  let state = {
+    counts:       { ...EMPTY_COUNTS },
+    playerStats:  initPlayerStats(players),
+    quarterStats: {},
+  };
+  for (const ev of events) state = applyEvent(state, ev);
+  return state;
+}
+
 export function useGame(gameId = null, players = DEMO_PLAYERS) {
-  const localEventIds = useRef(new Set()); // supress trackers insert
+  const goalies      = players.filter(p => p.pos === 'G');
+  const fieldPlayers = players.filter(p => p.pos !== 'G');
 
-  const goalies = players.filter((p) => p.pos === 'G');
-  const fieldPlayers = players.filter((p) => p.pos !== 'G');
-
-  const [counts, setCounts] = useState({ ...EMPTY_COUNTS });
-  const [playerStats, setPlayerStats] = useState(() => initPlayerStats(players));
+  const [counts,       setCounts]       = useState({ ...EMPTY_COUNTS });
+  const [playerStats,  setPlayerStats]  = useState(() => initPlayerStats(players));
   const [quarterStats, setQuarterStats] = useState({});
-  const [quarter, setQuarter] = useState(1);
+  const [quarter,      setQuarter]      = useState(1);
   const [activeGoalie, setActiveGoalie] = useState(goalies[0] ?? null);
+  const [lastLabel,    setLastLabel]    = useState('–');
 
-  const lastEvent = useRef(null); // { key, playerId, insertedId }
-  const [lastLabel, setLastLabel] = useState('–');
+  const lastEvent        = useRef(null);
+  const localEventIds    = useRef(new Set());
+  // Keep a full copy of all DB events so undo can rebuild cheaply
+  const allEventsRef     = useRef([]);
+  // Stable ref to players so channel effect doesn't need players as dep
+  const playersRef       = useRef(players);
+  useEffect(() => { playersRef.current = players; }, [players]);
 
-  // ── Rebuild everything from game_events on mount / when gameId changes ──
-// ── Load history on mount ──────────────────────────────────────────────
-useEffect(() => {
-  if (!gameId) return;
-  let cancelled = false;
+  // ── Apply state from a rebuilt snapshot ────────────────────────────────
+  const applyState = useCallback((state) => {
+    setCounts(state.counts);
+    setPlayerStats(state.playerStats);
+    setQuarterStats(state.quarterStats);
+  }, []);
 
-  supabase
-    .from('game_events')
-    .select('*')
-    .eq('game_id', gameId)
-    .order('created_at', { ascending: true })
-    .then(({ data, error }) => {
-      if (cancelled) return;
-      if (error) {
-        console.error('useGame: failed to load game_events history', error);
-        return;
-      }
-      let state = {
-        counts: { ...EMPTY_COUNTS },
-        playerStats: initPlayerStats(players),
-        quarterStats: {},
-      };
-      for (const ev of data || []) {
-        state = applyEvent(state, ev);
-      }
-      setCounts(state.counts);
-      setPlayerStats(state.playerStats);
-      setQuarterStats(state.quarterStats);
-    });
+  // ── Load history ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!gameId) return;
+    let cancelled = false;
 
-  return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [gameId]);
+    supabase
+      .from('game_events')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) { console.error('useGame: load error', error); return; }
+        allEventsRef.current = data || [];
+        applyState(rebuildFromEvents(allEventsRef.current, playersRef.current));
+      });
 
+    return () => { cancelled = true; };
+  }, [gameId, applyState]);
 
+  // ── Realtime channel — single stable subscription ──────────────────────
+  // Uses refs for everything so this effect only runs once per gameId.
+  useEffect(() => {
+    if (!gameId) return;
 
+    const channel = supabase
+      .channel(`game-events-${gameId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'game_events', filter: `game_id=eq.${gameId}` },
+        (payload) => {
+          const ev = payload.new;
 
-  // ── Realtime subscription — keeps all viewers in sync ──────────────────
-useEffect(() => {
-  if (!gameId) return;
+          // Skip our own optimistic inserts
+          if (localEventIds.current.has(ev.client_event_id)) {
+            localEventIds.current.delete(ev.client_event_id);
+            return;
+          }
 
-  const channel = supabase
-    .channel(`game-events-${gameId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'game_events',
-        filter: `game_id=eq.${gameId}`,
-      },
-      (payload) => {
-        const ev = payload.new;
-        if (localEventIds.current.has(ev.client_event_id)) {
-          localEventIds.current.delete(ev.client_event_id); // clean up
-          return; // skip — we already applied this optimistically
+          // Add to local event log and rebuild state
+          allEventsRef.current = [...allEventsRef.current, ev];
+          applyState(rebuildFromEvents(allEventsRef.current, playersRef.current));
         }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'game_events', filter: `game_id=eq.${gameId}` },
+        (payload) => {
+          allEventsRef.current = allEventsRef.current.filter(e => e.id !== payload.old.id);
+          applyState(rebuildFromEvents(allEventsRef.current, playersRef.current));
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          // Re-fetch on reconnect to catch missed events
+          supabase
+            .from('game_events')
+            .select('*')
+            .eq('game_id', gameId)
+            .order('created_at', { ascending: true })
+            .then(({ data }) => {
+              if (!data) return;
+              allEventsRef.current = data;
+              applyState(rebuildFromEvents(data, playersRef.current));
+            });
+        }
+      });
 
-        // Apply the new event to all three state slices atomically
-        setCounts((prev) => {
-          const { counts: next } = applyEvent(
-            { counts: prev, playerStats: {}, quarterStats: {} },
-            ev
-          );
-          return next;
-        });
+    return () => { supabase.removeChannel(channel); };
+  }, [gameId, applyState]); // applyState is useCallback([]) — stable
 
-        setPlayerStats((prev) => {
-          const { playerStats: next } = applyEvent(
-            { counts: {}, playerStats: prev, quarterStats: {} },
-            ev
-          );
-          return next;
-        });
-
-        setQuarterStats((prev) => {
-          const { quarterStats: next } = applyEvent(
-            { counts: {}, playerStats: {}, quarterStats: prev },
-            ev
-          );
-          return next;
-        });
-      }
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'game_events',
-        filter: `game_id=eq.${gameId}`,
-      },
-      () => {
-        // On delete (undo), simplest safe approach: full reload from DB
-        // since reversing a single event from state is complex
-        supabase
-          .from('game_events')
-          .select('*')
-          .eq('game_id', gameId)
-          .order('created_at', { ascending: true })
-          .then(({ data }) => {
-            if (!data) return;
-            let state = {
-              counts: { ...EMPTY_COUNTS },
-              playerStats: initPlayerStats(players),
-              quarterStats: {},
-            };
-            for (const ev of data) {
-              state = applyEvent(state, ev);
-            }
-            setCounts(state.counts);
-            setPlayerStats(state.playerStats);
-            setQuarterStats(state.quarterStats);
-          });
-      }
-    )
-    .subscribe();
-
-  return () => supabase.removeChannel(channel);
-}, [gameId]);
-
-  const gc = useCallback((k) => counts[k] ?? 0, [counts]);
-  const saves = useCallback(
-    () => Math.max(0, (counts.oshot ?? 0) - (counts.ogoal ?? 0)),
-    [counts]
-  );
+  // ── Derived helpers ────────────────────────────────────────────────────
+  const gc    = useCallback((k) => counts[k] ?? 0, [counts]);
+  const saves = useCallback(() => Math.max(0, (counts.oshot ?? 0) - (counts.ogoal ?? 0)), [counts]);
   const svPct = useCallback(() => {
     const s = counts.oshot ?? 0;
     return s > 0 ? Math.round((saves() / s) * 100) + '%' : '–';
   }, [counts, saves]);
   const sogUs = useCallback(() => counts.sog ?? 0, [counts]);
-  const qc = useCallback(
-    (period, key) => quarterStats[String(period)]?.[key] ?? 0,
-    [quarterStats]
-  );
+  const qc    = useCallback((period, key) => quarterStats[String(period)]?.[key] ?? 0, [quarterStats]);
 
-  const recordStat = useCallback(
-    async (key, player = null, shotLocation = null, strength = null) => {
-      setCounts((prev) => {
-        const { counts: next } = applyEvent(
-          { counts: prev, playerStats: {}, quarterStats: {} },
-          { stat_key: key, player_id: null, period: periodToInt(quarter), strength, value: 1 }
-        );
-        return next;
-      });
+  // ── recordStat ─────────────────────────────────────────────────────────
+  const recordStat = useCallback(async (key, player = null, shotLocation = null, strength = null) => {
+    const periodInt = periodToInt(quarter);
 
-      if (player) {
-        setPlayerStats((prev) => {
-          const { playerStats: next } = applyEvent(
-            { counts: {}, playerStats: prev, quarterStats: {} },
-            { stat_key: key, player_id: player.id, period: periodToInt(quarter), strength, value: 1 }
-          );
-          return next;
-        });
-      }
+    // Optimistic local update
+    setCounts(prev => applyEvent({ counts: prev, playerStats: {}, quarterStats: {} }, { stat_key: key, player_id: null, period: periodInt, strength, value: 1 }).counts);
+    if (player) setPlayerStats(prev => applyEvent({ counts: {}, playerStats: prev, quarterStats: {} }, { stat_key: key, player_id: player.id, period: periodInt, strength, value: 1 }).playerStats);
+    if (['goal', 'ogoal', 'sog', 'oshot'].includes(key)) setQuarterStats(prev => applyEvent({ counts: {}, playerStats: {}, quarterStats: prev }, { stat_key: key, player_id: null, period: periodInt, strength, value: 1 }).quarterStats);
 
-      if (['goal', 'ogoal', 'sog', 'oshot'].includes(key)) {
-        setQuarterStats((prev) => {
-          const { quarterStats: next } = applyEvent(
-            { counts: {}, playerStats: {}, quarterStats: prev },
-            { stat_key: key, player_id: null, period: periodToInt(quarter), strength, value: 1 }
-          );
-          return next;
-        });
-      }
+    lastEvent.current = { key, playerId: player?.id ?? null, insertedId: null };
+    setLastLabel((STAT_LABELS[key] ?? key) + (player ? ` — #${player.num} ${player.name}` : ''));
 
-      lastEvent.current = { key, playerId: player?.id ?? null, insertedId: null };
-      const label = STAT_LABELS[key] ?? key;
-      setLastLabel(label + (player ? ` — #${player.num} ${player.name}` : ''));
+    if (!gameId) return;
 
-      if (gameId) {
-        const clientEventId = crypto.randomUUID();
-        localEventIds.current.add(clientEventId);
+    const clientEventId = crypto.randomUUID();
+    localEventIds.current.add(clientEventId);
 
-        const { data, error } = await supabase
-          .from('game_events')
-          .insert({
-            game_id: gameId,
-            player_id: null, //player?.id ?? null, NULL FOR TESTING BEFORE ADDING REAL PLAYERS
-            stat_key: key,
-            period: periodToInt(quarter),
-            value: 1,
-            shot_x: shotLocation?.x ?? null,
-            shot_y: shotLocation?.y ?? null,
-            strength: strength,
-            input_method: 'tap',
-            client_event_id: clientEventId,
-          })
-          .select()
-          .single();
-        if (error) {
-          console.error('Failed to persist game_event', key, error);
-        } else if (lastEvent.current?.key === key) {
-          lastEvent.current.insertedId = data.id;
-        }
-      }
-    },
-    [quarter, gameId]
-  );
+    const { data, error } = await supabase
+      .from('game_events')
+      .insert({
+        game_id:         gameId,
+        player_id:       player?.id ?? null,
+        stat_key:        key,
+        period:          periodInt,
+        value:           1,
+        shot_x:          shotLocation?.x ?? null,
+        shot_y:          shotLocation?.y ?? null,
+        strength:        strength,
+        input_method:    'tap',
+        client_event_id: clientEventId,
+      })
+      .select()
+      .single();
 
-  const recordPenalty = useCallback(
-    async (team, durationSec, player = null) => {
-      const key = team === 'us' ? 'pen_us' : 'pen_them';
-      const secKey = team === 'us' ? 'pen_us_sec' : 'pen_them_sec';
+    if (error) {
+      console.error('Failed to persist game_event', key, error);
+      localEventIds.current.delete(clientEventId);
+    } else {
+      // Add to our local log so undo works correctly
+      allEventsRef.current = [...allEventsRef.current, data];
+      if (lastEvent.current?.key === key) lastEvent.current.insertedId = data.id;
+    }
+  }, [quarter, gameId]);
 
-      setCounts((prev) => ({
-        ...prev,
-        [key]: (prev[key] ?? 0) + 1,
-        [secKey]: (prev[secKey] ?? 0) + durationSec,
-      }));
+  // ── recordPenalty ──────────────────────────────────────────────────────
+  const recordPenalty = useCallback(async (team, durationSec, player = null) => {
+    const key    = team === 'us' ? 'pen_us'     : 'pen_them';
+    const secKey = team === 'us' ? 'pen_us_sec' : 'pen_them_sec';
+    const periodInt = periodToInt(quarter);
 
-      if (player) {
-        setPlayerStats((prev) => {
-          const ps = { ...prev[player.id] };
-          ps.pen = (ps.pen ?? 0) + 1;
-          return { ...prev, [player.id]: ps };
-        });
-      }
+    setCounts(prev => ({ ...prev, [key]: (prev[key] ?? 0) + 1, [secKey]: (prev[secKey] ?? 0) + durationSec }));
+    if (player) setPlayerStats(prev => { const ps = { ...prev[player.id] }; ps.pen = (ps.pen ?? 0) + 1; return { ...prev, [player.id]: ps }; });
 
-      lastEvent.current = { key, playerId: player?.id ?? null, insertedId: null };
-      const mins = Math.floor(durationSec / 60);
-      const secs = durationSec % 60;
-      const durLabel = mins > 0 ? `${mins}:${secs < 10 ? '0' : ''}${secs}` : `${secs}s`;
-      const who = player ? ` — #${player.num} ${player.name}` : team === 'us' ? ' — Us' : ' — Them';
-      setLastLabel(`Penalty (${durLabel})${who}`);
+    lastEvent.current = { key, playerId: player?.id ?? null, insertedId: null };
+    const mins = Math.floor(durationSec / 60), secs = durationSec % 60;
+    const durLabel = mins > 0 ? `${mins}:${secs < 10 ? '0' : ''}${secs}` : `${secs}s`;
+    setLastLabel(`Penalty (${durLabel})${player ? ` — #${player.num} ${player.name}` : team === 'us' ? ' — Us' : ' — Them'}`);
 
-      if (gameId) {
-        const clientEventId = crypto.randomUUID();
-        const { data, error } = await supabase
-          .from('game_events')
-          .insert({
-            game_id: gameId,
-            player_id: null, // player?.id ?? null, SET TO NULL FOR TESTING
-            stat_key: key,
-            period: periodToInt(quarter),
-            value: durationSec,
-            input_method: 'tap',
-            client_event_id: clientEventId,
-          })
-          .select()
-          .single();
-        if (error) {
-          console.error('Failed to persist penalty event', error);
-        } else if (lastEvent.current?.key === key) {
-          lastEvent.current.insertedId = data.id;
-        }
-      }
-    },
-    [quarter, gameId]
-  );
+    if (!gameId) return;
 
+    const clientEventId = crypto.randomUUID();
+    localEventIds.current.add(clientEventId);
+
+    const { data, error } = await supabase
+      .from('game_events')
+      .insert({ game_id: gameId, player_id: player?.id ?? null, stat_key: key, period: periodInt, value: durationSec, input_method: 'tap', client_event_id: clientEventId })
+      .select().single();
+
+    if (error) {
+      console.error('Failed to persist penalty event', error);
+      localEventIds.current.delete(clientEventId);
+    } else {
+      allEventsRef.current = [...allEventsRef.current, data];
+      if (lastEvent.current?.key === key) lastEvent.current.insertedId = data.id;
+    }
+  }, [quarter, gameId]);
+
+  // ── undoLast ───────────────────────────────────────────────────────────
   const undoLast = useCallback(() => {
     const ev = lastEvent.current;
     if (!ev) return;
 
-    if (ev.key === 'pen_us' || ev.key === 'pen_them') {
-      setCounts((prev) => ({
-        ...prev,
-        [ev.key]: Math.max(0, (prev[ev.key] ?? 0) - 1),
-        // Note: exact seconds reversal would need the original duration,
-        // which isn't stored on lastEvent today — TODO if needed.
-      }));
+    if (ev.insertedId) {
+      // Remove from local log immediately for instant UI update
+      allEventsRef.current = allEventsRef.current.filter(e => e.id !== ev.insertedId);
+      applyState(rebuildFromEvents(allEventsRef.current, playersRef.current));
+
+      // Delete from DB — realtime DELETE will fire but we already handled it locally
+      if (gameId) {
+        supabase.from('game_events').delete().eq('id', ev.insertedId)
+          .then(({ error }) => { if (error) console.error('Failed to delete undone event', error); });
+      }
     } else {
-      setCounts((prev) => {
+      // No DB id yet (insert still in flight) — just reverse counts locally
+      setCounts(prev => {
         const next = { ...prev, [ev.key]: Math.max(0, (prev[ev.key] ?? 0) - 1) };
-        if (ev.key === 'goal') next.sog = Math.max(0, (prev.sog ?? 0) - 1);
+        if (ev.key === 'goal')  next.sog   = Math.max(0, (prev.sog   ?? 0) - 1);
         if (ev.key === 'ogoal') next.oshot = Math.max(0, (prev.oshot ?? 0) - 1);
         return next;
       });
     }
 
-    if (ev.playerId) {
-      setPlayerStats((prev) => {
-        const ps = { ...prev[ev.playerId] };
-        if (ev.key === 'goal') { ps.g = Math.max(0, ps.g - 1); ps.sog = Math.max(0, ps.sog - 1); }
-        if (ev.key === 'sog') ps.sog = Math.max(0, ps.sog - 1);
-        if (ev.key === 'assist') ps.a = Math.max(0, ps.a - 1);
-        if (ev.key === 'gb') ps.gb = Math.max(0, ps.gb - 1);
-        if (ev.key === 'to') ps.to = Math.max(0, ps.to - 1);
-        if (ev.key === 'fo_w') ps.fo_w = Math.max(0, ps.fo_w - 1);
-        if (ev.key === 'fo_l') ps.fo_l = Math.max(0, ps.fo_l - 1);
-        if (ev.key === 'pen_us' || ev.key === 'pen_them') ps.pen = Math.max(0, ps.pen - 1);
-        return { ...prev, [ev.playerId]: ps };
-      });
-    }
-
-    if (gameId && ev.insertedId) {
-      supabase.from('game_events').delete().eq('id', ev.insertedId).then(({ error }) => {
-        if (error) console.error('Failed to delete undone event from DB', error);
-      });
-    }
-
     lastEvent.current = null;
     setLastLabel('–');
-  }, [gameId]);
+  }, [gameId, applyState]);
 
   return {
-    counts,
-    playerStats,
-    quarterStats,
-    quarter,
-    activeGoalie,
-    lastLabel,
-    goalies,
-    fieldPlayers,
-    gc,
-    qc,
-    saves,
-    svPct,
-    sogUs,
-    recordStat,
-    recordPenalty,
-    undoLast,
-    setQuarter,
-    setActiveGoalie,
+    counts, playerStats, quarterStats,
+    quarter, activeGoalie, lastLabel,
+    goalies, fieldPlayers,
+    gc, qc, saves, svPct, sogUs,
+    recordStat, recordPenalty, undoLast,
+    setQuarter, setActiveGoalie,
   };
 }
