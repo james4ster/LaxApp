@@ -243,6 +243,8 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
     const clientEventId = crypto.randomUUID();
     localEventIds.current.add(clientEventId);
 
+    console.log('PLAYER BEING SAVED:', player);
+    
     const { data, error } = await supabase
       .from('game_events')
       .insert({
