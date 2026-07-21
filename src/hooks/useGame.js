@@ -104,11 +104,15 @@ function applyEvent(state, ev) {
 // Full rebuild from an event array — used for history load and undo
 function rebuildFromEvents(events, players) {
   let state = {
-    counts:       { ...EMPTY_COUNTS },
-    playerStats:  initPlayerStats(players),
+    counts: { ...EMPTY_COUNTS },
+    playerStats: initPlayerStats(players),
     quarterStats: {},
   };
-  for (const ev of events) state = applyEvent(state, ev);
+
+  events.forEach(ev => {
+    state = applyEvent(state, ev);
+  });
+
   return state;
 }
 
@@ -121,9 +125,11 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   const [quarterStats, setQuarterStats] = useState({});
   const [quarter,      setQuarter]      = useState(1);
   const [activeGoalie, setActiveGoalie] = useState(goalies[0] ?? null);
+  const lastEvent        = useRef(null);
+  const eventsRef = useRef([]); // ref for stats and events
   const [lastLabel,    setLastLabel]    = useState('–');
 
-  const lastEvent        = useRef(null);
+  
   const localEventIds    = useRef(new Set());
   // Keep a full copy of all DB events so undo can rebuild cheaply
   const allEventsRef     = useRef([]);
