@@ -13,6 +13,7 @@ import { setPossession, endPossession } from '../lib/possessionService';
  * the background and a realtime subscription keeps all viewers in sync.
  */
 export function usePossession(gameId = null, isHome = true) {
+  console.log("🚨 usePossession loaded", gameId);
   const [possState, setPossState] = useState('none');
   const [usMs, setUsMs] = useState(0);
   const [themMs, setThemMs] = useState(0);
