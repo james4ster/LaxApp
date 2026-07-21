@@ -58,44 +58,69 @@ export function usePossession(gameId = null, isHome = true) {
   const applyEvents = useCallback(
     (events) => {
       const now = Date.now();
+  
       let us = 0;
       let them = 0;
       let current = null;
-
-      for (const e of events) {
-        const start = new Date(e.started_at).getTime();
-        const end = e.ended_at ? new Date(e.ended_at).getTime() : now;
-        const duration = Math.max(0, end - start);
-        const usTeam = isHome ? 'home' : 'away';
-        const themTeam = isHome ? 'away' : 'home';
-        if (e.team === usTeam) us += duration;
-        if (e.team === themTeam) them += duration;
-        if (!e.ended_at) current = e;
-      }
-
-      committedUs.current = us;
-      committedThem.current = them;
-      
+  
+      // Translate DB teams to what the user sees
       const usTeam = isHome ? 'home' : 'away';
       const themTeam = isHome ? 'away' : 'home';
 
-      currentSide.current =
-        current?.team === usTeam
-          ? 'us'
-          : current?.team === themTeam
-            ? 'them'
-            : 'none';
-
+      console.log("TEAM MAP", {
+        isHome,
+        usTeam,
+        themTeam
+      });
+      
+  
+      for (const e of events) {
+        const start = new Date(e.started_at).getTime();
+        const end = e.ended_at
+          ? new Date(e.ended_at).getTime()
+          : now;
+  
+        const duration = Math.max(0, end - start);
+  
+        if (e.team === usTeam) {
+          us += duration;
+        }
+  
+        if (e.team === themTeam) {
+          them += duration;
+        }
+  
+        if (!e.ended_at) {
+          current = e;
+        }
+      }
+  
+      committedUs.current = us;
+      committedThem.current = them;
+  
+      let currentSideValue = 'none';
+  
+      if (current?.team === usTeam) {
+        currentSideValue = 'us';
+      }
+  
+      if (current?.team === themTeam) {
+        currentSideValue = 'them';
+      }
+  
+      currentSide.current = currentSideValue;
+  
       startTs.current = current
         ? new Date(current.started_at).getTime()
         : null;
-
-      setPossState(currentSide.current);
+  
+      setPossState(currentSideValue);
       setUsMs(us);
       setThemMs(them);
-
+  
       stopTick();
-      if (currentSide.current !== 'none') {
+  
+      if (currentSideValue !== 'none') {
         rafId.current = requestAnimationFrame(tick);
       }
     },
