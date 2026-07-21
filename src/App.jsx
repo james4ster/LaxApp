@@ -74,6 +74,7 @@ export default function App() {
         onQuarterChange={setQuarter}
         isDark={isDark}
         onToggleDark={toggleDark}
+        disableQuarterChange={tab === 'fan'}
       />
 
       <div style={{ ...styles.page, display: tab === 'track' ? 'flex' : 'none' }}>

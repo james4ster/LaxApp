@@ -215,8 +215,17 @@ function QuarterBreakdown({ quarterStats, currentQuarter }) {
 
   const qc = (q, key) => quarterStats[String(q)]?.[key] ?? 0;
 
+  // hide if no data AND ahead of current quarter:
+  const quartersWithData = new Set(
+    Object.keys(quarterStats).map(Number).filter(q => {
+      const b = quarterStats[String(q)];
+      return b && (b.goal > 0 || b.ogoal > 0 || b.sog > 0 || b.oshot > 0);
+    })
+  );
+
   const isFuture = (q) => {
-    if (currentQuarter === 'OT') return false; // all quarters are past/current in OT
+    if (quartersWithData.has(q)) return false;        // has data → never future
+    if (currentQuarter === 'OT') return false;
     return q > currentQuarter;
   };
 
