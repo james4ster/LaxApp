@@ -2,21 +2,22 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { NEEDS_PLAYER, STAT_LABELS } from '../lib/constants';
 
+// hardcoded ids only used for testing
 export const DEMO_PLAYERS = [
-  { id: 'p1',  num: 1,  name: 'Hayes',   pos: 'G'    },
-  { id: 'p2',  num: 3,  name: 'Miller',  pos: 'ATT'  },
-  { id: 'p3',  num: 5,  name: 'Osei',    pos: 'MID'  },
-  { id: 'p4',  num: 7,  name: 'Chen',    pos: 'ATT'  },
-  { id: 'p5',  num: 9,  name: 'Walsh',   pos: 'DEF'  },
-  { id: 'p6',  num: 11, name: 'Torres',  pos: 'ATT'  },
-  { id: 'p7',  num: 12, name: 'Grant',   pos: 'MID'  },
-  { id: 'p8',  num: 14, name: 'Park',    pos: 'FOGO' },
-  { id: 'p9',  num: 17, name: 'Nguyen',  pos: 'DEF'  },
-  { id: 'p10', num: 20, name: 'Scott',   pos: 'MID'  },
-  { id: 'p11', num: 22, name: 'Davis',   pos: 'DEF'  },
-  { id: 'p12', num: 27, name: 'Reed',    pos: 'ATT'  },
-  { id: 'p13', num: 30, name: 'Reid',    pos: 'G'    },
-  { id: 'p14', num: 44, name: 'Burke',   pos: 'DEF'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-111111111111', num: 1,  name: 'Hayes',  pos: 'G'    },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-222222222222', num: 3,  name: 'Miller', pos: 'ATT'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-333333333333', num: 5,  name: 'Osei',   pos: 'MID'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-444444444444', num: 7,  name: 'Chen',   pos: 'ATT'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-555555555555', num: 9,  name: 'Walsh',  pos: 'DEF'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-666666666666', num: 11, name: 'Torres', pos: 'ATT'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-777777777777', num: 12, name: 'Grant',  pos: 'MID'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-888888888888', num: 14, name: 'Park',   pos: 'FOGO' },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-999999999999', num: 17, name: 'Nguyen', pos: 'DEF'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-aaaaaaaaaaaa', num: 20, name: 'Scott',  pos: 'MID'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-bbbbbbbbbbbb', num: 22, name: 'Davis',  pos: 'DEF'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-cccccccccccc', num: 27, name: 'Reed',   pos: 'ATT'  },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-dddddddddddd', num: 30, name: 'Reid',   pos: 'G'    },
+  { id: '7b8f1a5e-1c2d-4f77-9a01-eeeeeeeeeeee', num: 44, name: 'Burke',  pos: 'DEF'  },
 ];
 
 const EMPTY_COUNTS = {
