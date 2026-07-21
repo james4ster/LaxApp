@@ -18,6 +18,7 @@ export const NEEDS_PLAYER = new Set([
 export const STAT_LABELS = {
   goal: 'Goal For',
   ogoal: 'Goal Against',
+  sog: 'SOG',
   miss: 'Shot Missed',
   oshot: 'Opp Shot',
   gb: 'Ground Ball',
@@ -32,6 +33,7 @@ export const STAT_LABELS = {
 // ── Player modal prompt per stat ───────────────────────────────────────────
 export const STAT_PROMPTS = {
   goal: 'Who scored?',
+  sog:  'Who took the shot?',
   miss: 'Who took the shot?',
   gb: 'Who got the ground ball?',
   cto: 'Who caused the turnover?',
@@ -166,6 +168,7 @@ export const FIELD_COLS = [
   { key: 'a', label: 'A', width: '24px', align: 'center' },
   { key: 'pts', label: 'Pts', width: '28px', align: 'center' },
   { key: 'gb', label: 'GB', width: '24px', align: 'center' },
+  { key: 'sog', label: 'SOG', width: '32px', align: 'center' },
   { key: 'to', label: 'TO', width: '24px', align: 'center' },
   { key: 'fo', label: 'FO', width: '36px', align: 'center' },
 ];

@@ -32,6 +32,7 @@ export default function PlayerStatsTable({
         a: ps.a ?? 0,
         pts,
         gb: ps.gb ?? 0,
+        sog: ps.sog ?? 0,
         to: ps.to ?? 0,
         fo_w: ps.fo_w ?? 0,
         fo_l: ps.fo_l ?? 0,
@@ -130,6 +131,13 @@ export default function PlayerStatsTable({
           </div>
           <div style={{ ...S.val, color: r.gb > 0 ? 'var(--txt)' : 'var(--txt2)' }}>
             {r.gb}
+          </div>
+          <div style={{ 
+            ...S.val, 
+            color: r.sog > 0 ? 'var(--txt)' : 'var(--txt2)',
+            fontWeight: r.sog > 0 ? 700 : 400
+          }}>
+            {r.sog}
           </div>
           <div style={{ ...S.val, color: r.to > 0 ? 'var(--danger)' : 'var(--txt2)' }}>
             {r.to}
