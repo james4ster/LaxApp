@@ -21,7 +21,7 @@ export function usePossession(gameId = null, isHome = true) {
       console.log("🚨 usePossession unmounted");
     };
   }, []);
-  
+
   const [possState, setPossState] = useState('none');
   const [usMs, setUsMs] = useState(0);
   const [themMs, setThemMs] = useState(0);
@@ -32,6 +32,9 @@ export function usePossession(gameId = null, isHome = true) {
   const currentSide = useRef('none');
   const rafId = useRef(null);
   const eventsRef = useRef([]);
+  
+  // prevents realtime echo from fighting optimistic local state
+  const suppressRealtimeUntil = useRef(0);
 
   const tick = useCallback(() => {
     if (currentSide.current === 'none' || startTs.current === null) return;
@@ -72,8 +75,20 @@ export function usePossession(gameId = null, isHome = true) {
 
       committedUs.current = us;
       committedThem.current = them;
-      currentSide.current = current?.team ?? 'none';
-      startTs.current = current ? new Date(current.started_at).getTime() : null;
+      
+      const usTeam = isHome ? 'home' : 'away';
+      const themTeam = isHome ? 'away' : 'home';
+
+      currentSide.current =
+        current?.team === usTeam
+          ? 'us'
+          : current?.team === themTeam
+            ? 'them'
+            : 'none';
+
+      startTs.current = current
+        ? new Date(current.started_at).getTime()
+        : null;
 
       setPossState(currentSide.current);
       setUsMs(us);
@@ -115,24 +130,24 @@ export function usePossession(gameId = null, isHome = true) {
         },
         (payload) => {
           console.log('🔥 REALTIME EVENT RECEIVED:', payload);
-    
+        
+          if (Date.now() < suppressRealtimeUntil.current) {
+            console.log('⏸ ignoring realtime during local action');
+            return;
+          }
+        
           if (payload.eventType === 'INSERT') {
-            console.log('➕ INSERT:', payload.new);
             eventsRef.current = [...eventsRef.current, payload.new];
-    
           } else if (payload.eventType === 'UPDATE') {
-            console.log('✏️ UPDATE:', payload.new);
             eventsRef.current = eventsRef.current.map((e) =>
               e.id === payload.new.id ? payload.new : e
             );
-    
           } else if (payload.eventType === 'DELETE') {
-            console.log('🗑 DELETE:', payload.old);
-            eventsRef.current = eventsRef.current.filter((e) =>
-              e.id !== payload.old.id
+            eventsRef.current = eventsRef.current.filter(
+              (e) => e.id !== payload.old.id
             );
           }
-    
+        
           applyEvents(eventsRef.current);
         }
       )
@@ -173,13 +188,18 @@ export function usePossession(gameId = null, isHome = true) {
       }
 
       if (gameId) {
+        suppressRealtimeUntil.current = Date.now() + 1000;
+      
         if (newSide === 'none') {
-          endPossession(gameId).catch((err) => console.error('endPossession failed', err));
+          endPossession(gameId).catch((err) =>
+            console.error('endPossession failed', err)
+          );
         } else {
           const dbTeam =
             newSide === 'us'
               ? (isHome ? 'home' : 'away')
               : (isHome ? 'away' : 'home');
+      
           setPossession(gameId, dbTeam, `${gameId}-${now}`).catch((err) =>
             console.error('setPossession failed', err)
           );

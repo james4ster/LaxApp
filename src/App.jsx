@@ -18,6 +18,8 @@ export default function App() {
   const [tab,       setTab]       = useState('track');
   const [role,      setRole]      = useState('solo');
   
+  console.log("GAME CONTEXT isHome:", isHome);
+  
   const [gameEnded, setGameEnded] = useState(() => {
     // Restore ended state across refreshes, keyed by gameId so it's game-specific
     try { return localStorage.getItem(`game_ended_${ACTIVE_GAME_ID}`) === 'true'; }
