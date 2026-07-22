@@ -13,9 +13,16 @@ export default function GoalieBar({
     setOpen(false);
   };
 
-  const activeStats = activeGoalie
-  ? playerStats?.[activeGoalie.id] ?? {}
-  : {};
+  const currentGoalie = goalies.find(g => g.id === activeGoalie?.id);
+
+  const activeStats = currentGoalie
+    ? playerStats?.[currentGoalie.id] ?? {}
+    : {};
+
+  console.log("ACTIVE GOALIE DEBUG", {
+    activeGoalie,
+    activeStats,
+  });
 
   const activeSaves = Math.max(
     0,
@@ -36,7 +43,7 @@ export default function GoalieBar({
           <div>
             <div style={styles.lbl}>Active Goalie</div>
             <div style={styles.name}>
-              {activeGoalie ? `#${activeGoalie.num} ${activeGoalie.name}` : '–'}
+              {currentGoalie ? `#${currentGoalie.num} ${currentGoalie.name}` : '–'}
             </div>
           </div>
           <div style={styles.stats}>
@@ -67,6 +74,7 @@ export default function GoalieBar({
                 <div style={styles.ddName}>{g.name}</div>
                 <div style={styles.ddStats}>
                   {(() => {
+                    console.log("DROPDOWN GOALIE", g.name, playerStats[g.id]);
                     const gs = playerStats[g.id] ?? {};
                     const played = (gs.shots ?? 0) > 0 || (gs.ga ?? 0) > 0;
 
