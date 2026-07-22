@@ -291,7 +291,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
     )
     .on(
       'postgres_changes',
-      {
+      { 
         event: 'DELETE',
         schema: 'public',
         table: 'game_events',
