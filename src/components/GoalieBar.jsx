@@ -60,12 +60,12 @@ export default function GoalieBar({
 
                     if (!played) return 'Not yet played';
 
-                    const goalieSaves = Math.max(
+                    const calculatedSaves = Math.max(
                       0,
                       (gs.shots ?? 0) - (gs.ga ?? 0)
                     );
 
-                    return `${goalieSaves} sv · ${gs.ga ?? 0} GA`;
+                    return `${calculatedSaves} sv · ${gs.ga ?? 0} GA`;
                   })()}
                 </div>
                 {isActive && <div style={styles.ddCheck}>✓</div>}
