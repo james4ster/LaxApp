@@ -523,8 +523,7 @@ if (player && !goalie) {
         const { data, error, count } = await supabase
           .from('game_events')
           .delete({ count: 'exact' })
-          .in('id', ids)
-          .select();
+          .in('id', ids);
 
           console.log("DELETE RESULT", {
             ids,

@@ -325,6 +325,9 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     gap: 'clamp(4px, 1vh, 7px)',
+  
+    position: 'relative',
+    zIndex: 1,
   },
   // Section
   sec: {
@@ -369,6 +372,9 @@ const S = {
     flexShrink: 0,
     gap: 8,
     minHeight: 36,
+  
+    position: 'relative',
+    zIndex: 20,
   },
   barRight: {
     display: 'flex',
@@ -392,9 +398,13 @@ const S = {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    padding: '3px 6px',
+    padding: '8px 10px',
     flexShrink: 0,
     opacity: 1,
+  
+    position: 'relative',
+    zIndex: 30,
+    touchAction: 'manipulation',
   },
   // Game ended overlay
   endOverlay: {
