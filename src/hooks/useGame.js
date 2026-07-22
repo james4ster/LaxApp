@@ -519,16 +519,17 @@ if (player && !goalie) {
       );
   
       if (gameId) {
-        const { data, error } = await supabase
+        const { data, error, count } = await supabase
           .from('game_events')
-          .delete()
+          .delete({ count: 'exact' })
           .in('id', ids)
           .select();
-  
-        console.log("UNDO DELETE:", {
+
+        console.log("UNDO DELETE RESULT:", {
           ids,
           data,
-          error
+          error,
+          count
         });
   
         if (error) {
