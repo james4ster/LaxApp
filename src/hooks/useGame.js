@@ -496,7 +496,8 @@ if (player && !goalie) {
   // ── undoLast ───────────────────────────────────────────────────────────
   const undoLast = useCallback(async () => {
     const events = lastEvent.current;
-    console.log("UNDO EVENTS:", events);
+    console.log("=== UNDO START ===");
+    console.log("LAST EVENT STACK:", lastEvent.current);
   
     if (!events.length) return;
   
