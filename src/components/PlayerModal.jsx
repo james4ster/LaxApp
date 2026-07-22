@@ -40,14 +40,20 @@ export default function PlayerModal({
       selectedPlayer,
       tappedPlayer: player
     });
-    
+
     if (phase === "assist") {
+      console.log("PLAYER MODAL SENDING ASSIST:", {
+        scorer: selectedPlayer,
+        assist: player
+      });
+
       onRecord(
         "goal",
         selectedPlayer,
         null,
         player
       );
+
       onClose();
       return;
     }
