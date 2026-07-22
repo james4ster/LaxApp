@@ -223,56 +223,102 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   }, [gameId, applyState]);
 
   // ── Realtime channel — single stable subscription ──────────────────────
-  // Uses refs for everything so this effect only runs once per gameId.
-  useEffect(() => {
-    if (!gameId) return;
+ useEffect(() => {
+  if (!gameId) return;
 
-    const channel = supabase
-      .channel(`game-events-${gameId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'game_events', filter: `game_id=eq.${gameId}` },
-        (payload) => {
-          console.log('REALTIME GAME EVENT RECEIVED:', payload);
-          const ev = payload.new;
+  const refreshEvents = async () => {
+    const { data, error } = await supabase
+      .from('game_events')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('created_at', { ascending: true });
 
-          // Skip our own optimistic inserts
-          if (localEventIds.current.has(ev.client_event_id)) {
-            localEventIds.current.delete(ev.client_event_id);
-            return;
-          }
+    if (error) {
+      console.error('Realtime refresh failed:', error);
+      return;
+    }
 
-          // Add to local event log and rebuild state
-          allEventsRef.current = [...allEventsRef.current, ev];
-          applyState(rebuildFromEvents(allEventsRef.current, playersRef.current));
-        }
+    allEventsRef.current = data || [];
+
+    applyState(
+      rebuildFromEvents(
+        allEventsRef.current,
+        playersRef.current
       )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'game_events', filter: `game_id=eq.${gameId}` },
-        (payload) => {
-          allEventsRef.current = allEventsRef.current.filter(e => e.id !== payload.old.id);
-          applyState(rebuildFromEvents(allEventsRef.current, playersRef.current));
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          // Re-fetch on reconnect to catch missed events
-          supabase
-            .from('game_events')
-            .select('*')
-            .eq('game_id', gameId)
-            .order('created_at', { ascending: true })
-            .then(({ data }) => {
-              if (!data) return;
-              allEventsRef.current = data;
-              applyState(rebuildFromEvents(data, playersRef.current));
-            });
-        }
-      });
+    );
+  };
 
-    return () => { supabase.removeChannel(channel); };
-  }, [gameId, applyState]); // applyState is useCallback([]) — stable
+  const channel = supabase
+    .channel(`game-events-${gameId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'game_events',
+        filter: `game_id=eq.${gameId}`
+      },
+      (payload) => {
+        console.log('REALTIME INSERT RECEIVED:', payload);
+
+        const ev = payload.new;
+
+        // Skip our own insert because optimistic update already happened
+        if (localEventIds.current.has(ev.client_event_id)) {
+          localEventIds.current.delete(ev.client_event_id);
+
+          // Still add to local history for undo
+          allEventsRef.current = [
+            ...allEventsRef.current,
+            ev
+          ];
+
+          return;
+        }
+
+        // Other devices need a rebuild
+        allEventsRef.current = [
+          ...allEventsRef.current,
+          ev
+        ];
+
+        applyState(
+          rebuildFromEvents(
+            allEventsRef.current,
+            playersRef.current
+          )
+        );
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'game_events',
+        filter: `game_id=eq.${gameId}`
+      },
+      async (payload) => {
+        console.log('REALTIME DELETE RECEIVED:', payload);
+
+        // Always reload from DB after deletes
+        // because multiple events can be deleted together (goal + assist)
+        await refreshEvents();
+      }
+    )
+    .subscribe((status) => {
+      console.log('GAME EVENT CHANNEL STATUS:', status);
+
+      if (status === 'SUBSCRIBED') {
+        refreshEvents();
+      }
+    });
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+
+}, [gameId, applyState]);
 
   // ── Derived helpers ────────────────────────────────────────────────────
   const gc    = useCallback((k) => counts[k] ?? 0, [counts]);
