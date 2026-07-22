@@ -176,6 +176,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'game_events', filter: `game_id=eq.${gameId}` },
         (payload) => {
+          console.log('REALTIME GAME EVENT RECEIVED:', payload);
           const ev = payload.new;
 
           // Skip our own optimistic inserts
