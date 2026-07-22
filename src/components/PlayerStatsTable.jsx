@@ -174,6 +174,7 @@ export default function PlayerStatsTable({
               { /* This shows the In next to active goalie, removing */ } 
              { /*  {isActive && <span style={S.inTag}>IN</span>} */ }
             </div>
+            <div style={S.val}>{shots}</div>
             <div style={S.val}>{sv}</div>
             <div style={S.val}>{gag}</div>
             <div style={{ ...S.val, color: 'var(--tp)', fontWeight: 800 }}>
