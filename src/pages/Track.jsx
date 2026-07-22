@@ -252,13 +252,21 @@ export default function Track({
         </div>
         <div style={S.barRight}>
         <button
-  style={S.undoBtn}
+  style={{
+    position: 'relative',
+    zIndex: 9999,
+    background: 'red',
+    color: 'white',
+    padding: '20px',
+    border: '3px solid yellow',
+  }}
+  onPointerDown={() => console.log("UNDO POINTER")}
   onClick={() => {
-    console.log("BUTTON CLICK");
-    onUndo();
+    console.log("UNDO CLICK");
+    onUndo?.();
   }}
 >
-  ↩ Undo
+  TEST UNDO BUTTON
 </button>
           <EndGameButton
             onConfirmed={() => setShowEndGameModal(true)}
