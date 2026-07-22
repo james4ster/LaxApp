@@ -159,6 +159,12 @@ export default function Track({
 
   const show = (id) => visibleSectionIds.includes(id);
 
+
+  console.log("TRACK PROPS", {
+    onUndo,
+    type: typeof onUndo,
+  });
+
   return (
     <div style={S.shell}>
 
