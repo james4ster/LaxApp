@@ -139,6 +139,7 @@ export default function Track({
   };
 
   const handleRecord = (key, player, location, assistPlayer) => {
+    console.log("🔥 NEW HANDLE RECORD CODE LOADED");
     if (key === 'pen' && pendingPenalty) {
       onRecordPenalty?.(pendingPenalty.team, pendingPenalty.sec, player);
       setPendingPenalty(null);
