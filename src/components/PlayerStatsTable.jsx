@@ -5,10 +5,6 @@ export default function PlayerStatsTable({
   fieldPlayers,
   goalies,
   playerStats,
-  activeGoalie,
-  saves,
-  ga,
-  svPct,
 }) {
   const [sortCol, setSortCol] = useState('pts');
   const [sortDir, setSortDir] = useState(-1); // -1 = desc, 1 = asc
@@ -163,8 +159,8 @@ export default function PlayerStatsTable({
         const isActive = g.id === activeGoalie?.id;
         const gs = playerStats[g.id] ?? {};
 
-        const gag = gs.g ?? 0;
-        const shots = gs.sog ?? 0;
+        const gag = gs.ga ?? 0;
+        const shots = gs.shots ?? 0;
         const sv = Math.max(0, shots - gag);
 
         const svp = shots > 0
@@ -176,7 +172,8 @@ export default function PlayerStatsTable({
             <div style={S.pNum}>{g.num}</div>
             <div style={S.pName}>
               {g.name}
-              {isActive && <span style={S.inTag}>IN</span>}
+              { /* This shows the In next to active goalie, removing */ } 
+             { /*  {isActive && <span style={S.inTag}>IN</span>} */ }
             </div>
             <div style={S.val}>{sv}</div>
             <div style={S.val}>{gag}</div>

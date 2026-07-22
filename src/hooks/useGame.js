@@ -47,6 +47,7 @@ function initPlayerStats(players) {
       pen: 0,
       sog: 0,
       shots: 0,
+      saves: 0,
       ga: 0
     };
   });
@@ -65,12 +66,24 @@ function applyEvent(state, ev) {
 
   if (key === 'pen_us' || key === 'pen_them') {
     counts[key] = (counts[key] ?? 0) + 1;
+  
     const secKey = key === 'pen_us' ? 'pen_us_sec' : 'pen_them_sec';
     counts[secKey] = (counts[secKey] ?? 0) + (value ?? 0);
+  
+    // normal player penalty
     if (player_id && playerStats[player_id]) {
-      playerStats[player_id] = { ...playerStats[player_id] };
-      playerStats[player_id].pen = (playerStats[player_id].pen ?? 0) + 1;
+      const ps = { ...playerStats[player_id] };
+      ps.pen = (ps.pen ?? 0) + 1;
+      playerStats[player_id] = ps;
     }
+  
+    // goalie penalty
+    if (goalie_id && playerStats[goalie_id]) {
+      const gs = { ...playerStats[goalie_id] };
+      gs.pen = (gs.pen ?? 0) + 1;
+      playerStats[goalie_id] = gs;
+    }
+  
     return { counts, playerStats, quarterStats };
   }
 
@@ -100,24 +113,32 @@ function applyEvent(state, ev) {
 
   if (player_id && playerStats[player_id]) {
     const ps = { ...playerStats[player_id] };
-    if (key === 'goal')   { ps.g++; ps.sog++; }
-    if (key === 'sog')    ps.sog++;
+  
+    if (key === 'goal') { ps.g++; ps.sog++; }
+    if (key === 'sog') ps.sog++;
     if (key === 'assist') ps.a++;
-    if (key === 'gb')     ps.gb++;
-    if (key === 'to')     ps.to++;
-    if (key === 'fo_w')   ps.fo_w++;
-    if (key === 'fo_l')   ps.fo_l++;
-    
-    // goalie stats
-    if (key === 'oshot') {
-      ps.shots = (ps.shots ?? 0) + 1;
-    }
-
-    if (key === 'ogoal') {
-      ps.ga = (ps.ga ?? 0) + 1;
-      ps.shots = (ps.shots ?? 0) + 1;
-    }
+    if (key === 'gb') ps.gb++;
+    if (key === 'to') ps.to++;
+    if (key === 'fo_w') ps.fo_w++;
+    if (key === 'fo_l') ps.fo_l++;
+  
     playerStats[player_id] = ps;
+  }
+  
+  
+  // goalie attribution
+  if (goalie_id && playerStats[goalie_id]) {
+    const gs = { ...playerStats[goalie_id] };
+  
+    if (key === 'ogoal') {
+      gs.ga = (gs.ga ?? 0) + 1;
+    }
+  
+    if (key === 'oshot') {
+      gs.shots = (gs.shots ?? 0) + 1;
+    }
+  
+    playerStats[goalie_id] = gs;
   }
 
   return { counts, playerStats, quarterStats };
@@ -137,6 +158,10 @@ function rebuildFromEvents(events, players) {
 
   return state;
 }
+
+// goalie display helper
+export const goalieSaves = (player) =>
+  Math.max(0, (player.shots ?? 0) - (player.ga ?? 0));
 
 export function useGame(gameId = null, players = DEMO_PLAYERS) {
   const goalies      = players.filter(p => p.pos === 'G');
@@ -263,8 +288,8 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
     const periodInt = periodToInt(quarter);
 
     // Optimistic local update
-    setCounts(prev => applyEvent({ counts: prev, playerStats: {}, quarterStats: {} }, { stat_key: key, player_id: null, period: periodInt, strength, value: 1 }).counts);
-    if (player) setPlayerStats(prev => applyEvent({ counts: {}, playerStats: prev, quarterStats: {} }, { stat_key: key, player_id: player.id, period: periodInt, strength, value: 1 }).playerStats);
+    setCounts(prev => applyEvent({ counts: prev, playerStats: {}, quarterStats: {} }, { stat_key: key, player_id: null, goalie_id: goalie?.id ?? null, period: periodInt, strength, value: 1 }).counts);
+    if (player && !goalie) setPlayerStats(prev => applyEvent({ counts: {}, playerStats: prev, quarterStats: {} }, { stat_key: key, player_id: player.id, period: periodInt, strength, value: 1 }).playerStats);
     if (['goal', 'ogoal', 'sog', 'oshot'].includes(key)) setQuarterStats(prev => applyEvent({ counts: {}, playerStats: {}, quarterStats: prev }, { stat_key: key, player_id: null, period: periodInt, strength, value: 1 }).quarterStats);
 
     lastEvent.current = { key, playerId: player?.id ?? null, insertedId: null };
@@ -282,6 +307,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
       .insert({
         game_id:         gameId,
         player_id:       player?.id ?? null,
+        goalie_id:       goalie?.id ?? null,   // <-- ADD THIS
         stat_key:        key,
         period:          periodInt,
         value:           1,
@@ -305,7 +331,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   }, [quarter, gameId, activeGoalie]);
 
   // ── recordPenalty ──────────────────────────────────────────────────────
-  const recordPenalty = useCallback(async (team, durationSec, player = null) => {
+  const recordPenalty = useCallback(async (team, durationSec, player = null, goalie = activeGoalie) => {
     const key    = team === 'us' ? 'pen_us'     : 'pen_them';
     const secKey = team === 'us' ? 'pen_us_sec' : 'pen_them_sec';
     const periodInt = periodToInt(quarter);
