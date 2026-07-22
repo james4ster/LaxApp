@@ -149,9 +149,22 @@ export default function PlayerStatsTable({
 
       <div style={{ ...S.row, ...S.hdr, gridTemplateColumns: gTemplate }}>
         {GOALIE_COLS.map((c) => (
-          <div key={c.key} style={{ ...S.hdrCell, textAlign: c.align }}>
-            {c.label}
-          </div>
+          <div
+          key={c.key}
+          style={{
+            ...S.hdrCell,
+            textAlign: c.align,
+            display: 'flex',
+            justifyContent:
+              c.align === 'center'
+                ? 'center'
+                : c.align === 'right'
+                ? 'flex-end'
+                : 'flex-start',
+          }}
+        >
+          {c.label}
+        </div>
         ))}
       </div>
 
@@ -174,12 +187,12 @@ export default function PlayerStatsTable({
               { /* This shows the In next to active goalie, removing */ } 
              { /*  {isActive && <span style={S.inTag}>IN</span>} */ }
             </div>
-            <div style={S.val}>{shots}</div>
-            <div style={S.val}>{sv}</div>
-            <div style={S.val}>{gag}</div>
-            <div style={{ ...S.val, color: 'var(--tp)', fontWeight: 800 }}>
-              {svp}
-            </div>
+              <div style={{ ...S.val, textAlign:'center' }}>{shots}</div>
+              <div style={{ ...S.val, textAlign:'center' }}>{sv}</div>
+              <div style={{ ...S.val, textAlign:'center' }}>{gag}</div>
+              <div style={{ ...S.val, textAlign:'center', color:'var(--tp)', fontWeight:800 }}>
+                {svp}
+              </div>
           </div>
         );
       })}

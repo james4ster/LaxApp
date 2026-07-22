@@ -174,10 +174,10 @@ export const FIELD_COLS = [
 ];
 
 export const GOALIE_COLS = [
-  { key: 'num', label: '#', width: '20px', align: 'right' },
+  { key: 'num',  label: '#',     width: '24px', align: 'right' },
   { key: 'name', label: 'Goalie', width: '1fr', align: 'left' },
-  { key:'sog', label:'SOG', width: '1fr', align: 'left' },
-  { key: 'sv', label: 'SV', width: '28px', align: 'center' },
-  { key: 'ga', label: 'GA', width: '28px', align: 'center' },
-  { key: 'svp', label: 'SV%', width: '36px', align: 'center' },
+  { key: 'sog',  label: 'SOG',   width: '36px', align: 'center' },
+  { key: 'sv',   label: 'SV',    width: '36px', align: 'center' },
+  { key: 'ga',   label: 'GA',    width: '36px', align: 'center' },
+  { key: 'svp',  label: 'SV%',   width: '44px', align: 'center' },
 ];

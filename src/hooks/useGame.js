@@ -183,7 +183,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   const [quarterStats, setQuarterStats] = useState({});
   const [quarter,      setQuarter]      = useState(1);
   const [activeGoalie, setActiveGoalie] = useState(goalies[0] ?? null);
-  const lastEvent        = useRef(null);
+  const lastEvent = useRef([]);
   const eventsRef = useRef([]); // ref for stats and events
   const [lastLabel,    setLastLabel]    = useState('–');
 
@@ -342,7 +342,12 @@ if (player && !goalie) {
   }
     if (['goal', 'ogoal', 'sog', 'oshot'].includes(key)) setQuarterStats(prev => applyEvent({ counts: {}, playerStats: {}, quarterStats: prev }, { stat_key: key, player_id: null, period: periodInt, strength, value: 1 }).quarterStats);
 
-    lastEvent.current = { key, playerId: player?.id ?? null, insertedId: null };
+    lastEvent.current.push({
+      key,
+      playerId: player?.id ?? null,
+      insertedId: null
+    });
+
     setLastLabel((STAT_LABELS[key] ?? key) + (player ? ` — #${player.num} ${player.name}` : ''));
 
     if (!gameId) return;
@@ -370,13 +375,22 @@ if (player && !goalie) {
       .select()
       .single();
 
-    if (error) {
-      console.error('Failed to persist game_event', key, error);
-      localEventIds.current.delete(clientEventId);
-    } else {
+      if (error) {
+        console.error('Failed to persist game_event', key, error);
+        localEventIds.current.delete(clientEventId);
+      
+        lastEvent.current = lastEvent.current.filter(
+          e => e.insertedId !== null
+        );
+      }
+      else {
       // Add to our local log so undo works correctly
       allEventsRef.current = [...allEventsRef.current, data];
-      if (lastEvent.current?.key === key) lastEvent.current.insertedId = data.id;
+      const last = lastEvent.current[lastEvent.current.length - 1];
+
+        if (last?.key === key) {
+          last.insertedId = data.id;
+        }
     }
   }, [quarter, gameId, activeGoalie]);
 
@@ -389,7 +403,11 @@ if (player && !goalie) {
     setCounts(prev => ({ ...prev, [key]: (prev[key] ?? 0) + 1, [secKey]: (prev[secKey] ?? 0) + durationSec }));
     if (player) setPlayerStats(prev => { const ps = { ...prev[player.id] }; ps.pen = (ps.pen ?? 0) + 1; return { ...prev, [player.id]: ps }; });
 
-    lastEvent.current = { key, playerId: player?.id ?? null, insertedId: null };
+    lastEvent.current.push({
+      key,
+      playerId: player?.id ?? null,
+      insertedId: null
+    });
     const mins = Math.floor(durationSec / 60), secs = durationSec % 60;
     const durLabel = mins > 0 ? `${mins}:${secs < 10 ? '0' : ''}${secs}` : `${secs}s`;
     setLastLabel(`Penalty (${durLabel})${player ? ` — #${player.num} ${player.name}` : team === 'us' ? ' — Us' : ' — Them'}`);
@@ -409,38 +427,73 @@ if (player && !goalie) {
       localEventIds.current.delete(clientEventId);
     } else {
       allEventsRef.current = [...allEventsRef.current, data];
-      if (lastEvent.current?.key === key) lastEvent.current.insertedId = data.id;
+      const last = lastEvent.current[lastEvent.current.length - 1];
+
+        if (last?.key === key) {
+          last.insertedId = data.id;
+        }
     }
   }, [quarter, gameId, activeGoalie]);
 
   // ── undoLast ───────────────────────────────────────────────────────────
-  const undoLast = useCallback(() => {
-    const ev = lastEvent.current;
-    if (!ev) return;
+const undoLast = useCallback(() => {
+  const events = lastEvent.current;
 
-    if (ev.insertedId) {
-      // Remove from local log immediately for instant UI update
-      allEventsRef.current = allEventsRef.current.filter(e => e.id !== ev.insertedId);
-      applyState(rebuildFromEvents(allEventsRef.current, playersRef.current));
+  if (!events.length) return;
 
-      // Delete from DB — realtime DELETE will fire but we already handled it locally
-      if (gameId) {
-        supabase.from('game_events').delete().eq('id', ev.insertedId)
-          .then(({ error }) => { if (error) console.error('Failed to delete undone event', error); });
-      }
-    } else {
-      // No DB id yet (insert still in flight) — just reverse counts locally
-      setCounts(prev => {
-        const next = { ...prev, [ev.key]: Math.max(0, (prev[ev.key] ?? 0) - 1) };
-        if (ev.key === 'goal')  next.sog   = Math.max(0, (prev.sog   ?? 0) - 1);
-        if (ev.key === 'ogoal') next.oshot = Math.max(0, (prev.oshot ?? 0) - 1);
-        return next;
-      });
+  const ids = events
+    .map(e => e.insertedId)
+    .filter(Boolean);
+
+  if (ids.length) {
+    // Remove from local log immediately
+    allEventsRef.current = allEventsRef.current.filter(
+      e => !ids.includes(e.id)
+    );
+
+    applyState(
+      rebuildFromEvents(allEventsRef.current, playersRef.current)
+    );
+
+    // Delete from DB
+    if (gameId) {
+      supabase
+        .from('game_events')
+        .delete()
+        .in('id', ids)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Failed to delete undone event', error);
+            lastEvent.current = events;
+          }
+        });
     }
 
-    lastEvent.current = null;
-    setLastLabel('–');
-  }, [gameId, applyState]);
+  } else {
+    // Events still saving — reverse pending events locally
+    setCounts(prev => {
+      const next = { ...prev };
+
+      events.forEach(ev => {
+        next[ev.key] = Math.max(0, (next[ev.key] ?? 0) - 1);
+
+        if (ev.key === 'goal') {
+          next.sog = Math.max(0, (next.sog ?? 0) - 1);
+        }
+
+        if (ev.key === 'ogoal') {
+          next.oshot = Math.max(0, (next.oshot ?? 0) - 1);
+        }
+      });
+
+      return next;
+    });
+  }
+
+  lastEvent.current = [];
+  setLastLabel('–');
+
+}, [gameId, applyState]);
 
   return {
     counts, playerStats, quarterStats,
