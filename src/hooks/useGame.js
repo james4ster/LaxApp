@@ -4,20 +4,20 @@ import { NEEDS_PLAYER, STAT_LABELS } from '../lib/constants';
 
 // hardcoded ids only used for testing
 export const DEMO_PLAYERS = [
-  { id: '7b8f1a5e-1c2d-4f77-9a01-111111111111', num: 1,  name: 'Hayes',  pos: 'G'    },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-222222222222', num: 3,  name: 'Miller', pos: 'ATT'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-333333333333', num: 5,  name: 'Osei',   pos: 'MID'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-444444444444', num: 7,  name: 'Chen',   pos: 'ATT'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-555555555555', num: 9,  name: 'Walsh',  pos: 'DEF'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-666666666666', num: 11, name: 'Torres', pos: 'ATT'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-777777777777', num: 12, name: 'Grant',  pos: 'MID'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-888888888888', num: 14, name: 'Park',   pos: 'FOGO' },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-999999999999', num: 17, name: 'Nguyen', pos: 'DEF'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-aaaaaaaaaaaa', num: 20, name: 'Scott',  pos: 'MID'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-bbbbbbbbbbbb', num: 22, name: 'Davis',  pos: 'DEF'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-cccccccccccc', num: 27, name: 'Reed',   pos: 'ATT'  },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-dddddddddddd', num: 30, name: 'Reid',   pos: 'G'    },
-  { id: '7b8f1a5e-1c2d-4f77-9a01-eeeeeeeeeeee', num: 44, name: 'Burke',  pos: 'DEF'  },
+  { id: 'a4c77ea4-919a-4a7d-a611-3143fa673c0c', num: 1, name: 'Hayes', pos: 'G' },
+  { id: '94e6b136-f307-4551-9c8d-251ea46dab97', num: 3, name: 'Miller', pos: 'ATT' },
+  { id: 'e11c78ae-c658-4123-9eb0-10ddf7bb9a1e', num: 5, name: 'Osei', pos: 'MID' },
+  { id: '517c6ec3-5265-49c2-a6e2-2830e68c09f4', num: 7, name: 'Chen', pos: 'ATT' },
+  { id: 'e01652dd-2dba-4e8d-a65a-3197114323ee', num: 9, name: 'Walsh', pos: 'DEF' },
+  { id: '549c2d05-57b6-4d1a-b7f7-2fbe40c6bc14', num: 11, name: 'Torres', pos: 'ATT' },
+  { id: '335f6ac2-fdff-4870-9276-c917d4c56aea', num: 12, name: 'Grant', pos: 'MID' },
+  { id: 'b45744bf-b539-470a-9943-5c2907932a84', num: 14, name: 'Park', pos: 'FOGO' },
+  { id: '7061519b-e222-495b-98ca-36f6066efb4a', num: 17, name: 'Nguyen', pos: 'DEF' },
+  { id: 'ea2dc427-43db-42df-96ca-05e3404d9165', num: 20, name: 'Scott', pos: 'MID' },
+  { id: '09f47156-a7a5-47dd-90fd-6d43e7aaff07', num: 22, name: 'Davis', pos: 'DEF' },
+  { id: '12ce85c0-af24-4a71-875a-20b93a7e1d1d', num: 27, name: 'Reed', pos: 'ATT' },
+  { id: 'f7d2644a-019c-4baa-9d11-59095466c0ce', num: 30, name: 'Reid', pos: 'G' },
+  { id: '060abdcf-dd32-4180-a533-7fd770ffdc66', num: 44, name: 'Burke', pos: 'DEF' },
 ];
 
 const EMPTY_COUNTS = {
