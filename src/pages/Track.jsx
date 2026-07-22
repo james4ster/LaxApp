@@ -157,12 +157,6 @@ export default function Track({
     }
   };
 
-  console.log('GOALIE DEBUG', {
-    onChangeGoalie,
-    type: typeof onChangeGoalie,
-    activeGoalie
-  });
-  
   const show = (id) => visibleSectionIds.includes(id);
 
   return (
