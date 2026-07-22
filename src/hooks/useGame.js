@@ -443,6 +443,7 @@ if (player && !goalie) {
       if (match) {
         match.insertedId = data.id;
       }
+      console.log("UNDO IDS:", ids);
     }
   }, [quarter, gameId, activeGoalie]);
 
@@ -518,21 +519,24 @@ const undoLast = useCallback(() => {
     // Delete from DB
     // Delete from DB
 if (gameId) {
-  supabase
-    .from('game_events')
-    .delete()
-    .in('id', ids)
-    .select()
-    .then(({ data, error }) => {
-      console.log("UNDO DELETE RESULT:", { data, error });
+  const { data, error } = await supabase
+  .from('game_events')
+  .delete()
+  .in('id', ids)
+  .select();
 
-      if (error) {
-        console.error('Failed to delete undone event', error);
-        lastEvent.current = events;
-      } else {
-        lastEvent.current = [];
-      }
-    });
+console.log("UNDO DELETE:", {
+  ids,
+  data,
+  error
+});
+
+if (error) {
+  console.error('Failed to delete undone event', error);
+  lastEvent.current = events;
+} else {
+  lastEvent.current = [];
+}
 }
 
   } else {
