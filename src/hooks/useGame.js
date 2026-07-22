@@ -127,19 +127,22 @@ function applyEvent(state, ev) {
   
   
   // goalie attribution
-  if (goalie_id && playerStats[goalie_id]) {
-    const gs = { ...playerStats[goalie_id] };
-  
-    if (key === 'ogoal') {
-      gs.ga = (gs.ga ?? 0) + 1;
+    if (goalie_id && playerStats[goalie_id]) {
+      const gs = { ...playerStats[goalie_id] };
+
+      if (key === 'oshot') {
+        // saved shot against goalie
+        gs.shots = (gs.shots ?? 0) + 1;
+      }
+
+      if (key === 'ogoal') {
+        // goal against goalie counts as a shot faced too
+        gs.shots = (gs.shots ?? 0) + 1;
+        gs.ga = (gs.ga ?? 0) + 1;
+      }
+
+      playerStats[goalie_id] = gs;
     }
-  
-    if (key === 'oshot') {
-      gs.shots = (gs.shots ?? 0) + 1;
-    }
-  
-    playerStats[goalie_id] = gs;
-  }
 
   return { counts, playerStats, quarterStats };
 }
