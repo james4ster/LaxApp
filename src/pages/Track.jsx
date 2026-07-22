@@ -138,12 +138,12 @@ export default function Track({
     }
   };
 
-  const handleRecord = (key, player, location) => {
+  const handleRecord = (key, player, location, assistPlayer) => {
     if (key === 'pen' && pendingPenalty) {
       onRecordPenalty?.(pendingPenalty.team, pendingPenalty.sec, player);
       setPendingPenalty(null);
     } else {
-      onRecordStat(key, player, location);
+      onRecordStat(key, player, location, null, assistPlayer);
     }
   };
 
