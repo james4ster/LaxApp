@@ -516,20 +516,24 @@ const undoLast = useCallback(() => {
     );
 
     // Delete from DB
-    if (gameId) {
-      supabase
-      .from('game_events')
-      .delete()
-      .in('id', ids)
-      .then(({ error }) => {
-        if (error) {
-          console.error('Failed to delete undone event', error);
-          lastEvent.current = events;
-        } else {
-          lastEvent.current = [];
-        }
-      });
-    }
+    // Delete from DB
+if (gameId) {
+  supabase
+    .from('game_events')
+    .delete()
+    .in('id', ids)
+    .select()
+    .then(({ data, error }) => {
+      console.log("UNDO DELETE RESULT:", { data, error });
+
+      if (error) {
+        console.error('Failed to delete undone event', error);
+        lastEvent.current = events;
+      } else {
+        lastEvent.current = [];
+      }
+    });
+}
 
   } else {
     // Events still saving — reverse pending events locally
