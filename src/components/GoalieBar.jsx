@@ -4,9 +4,6 @@ export default function GoalieBar({
   goalies,
   activeGoalie,
   onChangeGoalie,
-  saves,
-  ga,
-  svPct,
   playerStats,
 }) {
   const [open, setOpen] = useState(false);
@@ -15,6 +12,21 @@ export default function GoalieBar({
     onChangeGoalie(g);
     setOpen(false);
   };
+
+  const activeStats = activeGoalie
+  ? playerStats?.[activeGoalie.id] ?? {}
+  : {};
+
+  const activeSaves = Math.max(
+    0,
+    (activeStats.shots ?? 0) - (activeStats.ga ?? 0)
+  );
+
+  const activeGA = activeStats.ga ?? 0;
+
+  const activeSVPct = activeStats.shots > 0
+    ? Math.round((activeSaves / activeStats.shots) * 100) + '%'
+    : '–';
 
   return (
     <div style={styles.bar}>
@@ -28,7 +40,7 @@ export default function GoalieBar({
             </div>
           </div>
           <div style={styles.stats}>
-            {saves} sv · {ga} GA · {svPct}
+            {activeSaves} sv · {activeGA} GA · {activeSVPct}
           </div>
         </div>
         <button onClick={() => setOpen((o) => !o)} style={styles.changeBtn}>

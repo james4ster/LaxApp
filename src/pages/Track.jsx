@@ -187,11 +187,8 @@ export default function Track({
           goalies={goalies}
           activeGoalie={activeGoalie}
           onChangeGoalie={onChangeGoalie}
-          saves={saves}
-          ga={ga}
-          svPct={svPct}
           playerStats={playerStats}
-       />
+        />
         )
         }
 
