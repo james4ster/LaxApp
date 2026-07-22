@@ -374,7 +374,7 @@ const S = {
     minHeight: 36,
   
     position: 'relative',
-    zIndex: 20,
+    zIndex: 100,
   },
   barRight: {
     display: 'flex',
