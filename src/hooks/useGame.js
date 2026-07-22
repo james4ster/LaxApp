@@ -184,7 +184,6 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   const [quarter,      setQuarter]      = useState(1);
   const [activeGoalie, setActiveGoalie] = useState(goalies[0] ?? null);
   const lastEvent = useRef([]);
-  const eventsRef = useRef([]); // ref for stats and events
   const [lastLabel,    setLastLabel]    = useState('–');
 
   
@@ -443,7 +442,6 @@ if (player && !goalie) {
       if (match) {
         match.insertedId = data.id;
       }
-      console.log("UNDO IDS:", ids);
     }
   }, [quarter, gameId, activeGoalie]);
 
@@ -496,74 +494,77 @@ if (player && !goalie) {
   }, [quarter, gameId, activeGoalie]);
 
   // ── undoLast ───────────────────────────────────────────────────────────
-const undoLast = useCallback(() => {
-  const events = lastEvent.current;
-  console.log("UNDO EVENTS:", events);
-
-  if (!events.length) return;
-
-  const ids = events
-    .map(e => e.insertedId)
-    .filter(Boolean);
-
-  if (ids.length) {
-    // Remove from local log immediately
-    allEventsRef.current = allEventsRef.current.filter(
-      e => !ids.includes(e.id)
-    );
-
-    applyState(
-      rebuildFromEvents(allEventsRef.current, playersRef.current)
-    );
-
-    // Delete from DB
-    // Delete from DB
-if (gameId) {
-  const { data, error } = await supabase
-  .from('game_events')
-  .delete()
-  .in('id', ids)
-  .select();
-
-console.log("UNDO DELETE:", {
-  ids,
-  data,
-  error
-});
-
-if (error) {
-  console.error('Failed to delete undone event', error);
-  lastEvent.current = events;
-} else {
-  lastEvent.current = [];
-}
-}
-
-  } else {
-    // Events still saving — reverse pending events locally
-    setCounts(prev => {
-      const next = { ...prev };
-
-      events.forEach(ev => {
-        next[ev.key] = Math.max(0, (next[ev.key] ?? 0) - 1);
-
-        if (ev.key === 'goal') {
-          next.sog = Math.max(0, (next.sog ?? 0) - 1);
+  const undoLast = useCallback(async () => {
+    const events = lastEvent.current;
+    console.log("UNDO EVENTS:", events);
+  
+    if (!events.length) return;
+  
+    const ids = events
+      .map(e => e.insertedId)
+      .filter(Boolean);
+  
+    if (ids.length) {
+  
+      // Remove locally first
+      allEventsRef.current = allEventsRef.current.filter(
+        e => !ids.includes(e.id)
+      );
+  
+      applyState(
+        rebuildFromEvents(
+          allEventsRef.current,
+          playersRef.current
+        )
+      );
+  
+      if (gameId) {
+        const { data, error } = await supabase
+          .from('game_events')
+          .delete()
+          .in('id', ids)
+          .select();
+  
+        console.log("UNDO DELETE:", {
+          ids,
+          data,
+          error
+        });
+  
+        if (error) {
+          console.error('Failed to delete undone event', error);
+          lastEvent.current = events;
+          return;
         }
-
-        if (ev.key === 'ogoal') {
-          next.oshot = Math.max(0, (next.oshot ?? 0) - 1);
-        }
+      }
+  
+    } else {
+  
+      // No DB ids yet, only reverse local pending events
+      setCounts(prev => {
+        const next = { ...prev };
+  
+        events.forEach(ev => {
+          next[ev.key] = Math.max(0, (next[ev.key] ?? 0) - 1);
+  
+          if (ev.key === 'goal') {
+            next.sog = Math.max(0, (next.sog ?? 0) - 1);
+          }
+  
+          if (ev.key === 'ogoal') {
+            next.oshot = Math.max(0, (next.oshot ?? 0) - 1);
+          }
+        });
+  
+        return next;
       });
-
-      return next;
-    });
-  }
-
-  lastEvent.current = [];
-  setLastLabel('–');
-
-}, [gameId, applyState]);
+    }
+  
+    // only clear after successful undo path
+    lastEvent.current = [];
+    setLastLabel('–');
+  
+  }, [gameId, applyState]);
 
   return {
     counts, playerStats, quarterStats,
