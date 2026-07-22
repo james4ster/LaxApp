@@ -59,7 +59,7 @@ function emptyQuarterBucket() {
 }
 
 function applyEvent(state, ev) {
-  const { stat_key: key, player_id, goalie_id, period, strength, value } = ev;
+  const { stat_key: key, player_id, goalie_id, assist_player_id, period, strength, value } = ev;
   const counts      = { ...state.counts };
   const playerStats = { ...state.playerStats };
   const quarterStats = { ...state.quarterStats };
@@ -122,15 +122,29 @@ function applyEvent(state, ev) {
   if (player_id && playerStats[player_id]) {
     const ps = { ...playerStats[player_id] };
   
-    if (key === 'goal') { ps.g++; ps.sog++; }
+    if (key === 'goal') {
+      ps.g++;
+      ps.sog++;
+    }
+  
     if (key === 'sog') ps.sog++;
-    if (key === 'assist') ps.a++;
     if (key === 'gb') ps.gb++;
     if (key === 'to') ps.to++;
     if (key === 'fo_w') ps.fo_w++;
     if (key === 'fo_l') ps.fo_l++;
   
     playerStats[player_id] = ps;
+  }
+  
+  // assist attached to goal
+  if (
+    key === 'goal' &&
+    assist_player_id &&
+    playerStats[assist_player_id]
+  ) {
+    const aps = { ...playerStats[assist_player_id] };
+    aps.a = (aps.a ?? 0) + 1;
+    playerStats[assist_player_id] = aps;
   }
   
   
@@ -334,7 +348,8 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
     key,
     player = null,
     shotLocation = null,
-    strength = null
+    strength = null,
+    assistPlayer = null
   ) => {
   
     const goalie = (key === 'oshot' || key === 'ogoal')
@@ -357,6 +372,8 @@ if (player && !goalie) {
       {
         stat_key:key,
         player_id:player.id,
+        assist_player_id: assistPlayer?.id ?? null,
+        goalie_id: goalie?.id ?? null,
         period:periodInt,
         strength,
         value:1
@@ -411,7 +428,8 @@ if (player && !goalie) {
       .insert({
         game_id:         gameId,
         player_id:       player?.id ?? null,
-        goalie_id:       goalie?.id ?? null,   // <-- ADD THIS
+        goalie_id:       goalie?.id ?? null,   
+        assist_player_id: assistPlayer?.id ?? null,
         stat_key:        key,
         period:          periodInt,
         value:           1,

@@ -9,11 +9,13 @@ export default function PlayerModal({
   onClose,
 }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [phase, setPhase] = useState('pick'); // 'pick' | 'assist'
+  const [assistPlayer, setAssistPlayer] = useState(null);
+  const [phase, setPhase] = useState('pick');
 
   useEffect(() => {
     if (isOpen) {
       setSelectedPlayer(null);
+      setAssistPlayer(null);
       setPhase('pick');
     }
   }, [isOpen, pendingStat]);
@@ -33,31 +35,39 @@ export default function PlayerModal({
   const showAssistFooter = isGoal && selectedPlayer && phase === 'pick';
 
   const handlePlayerTap = (player) => {
-    if (phase === 'assist') {
-      // Picking the assister — record assist then close
-      onRecord('assist', player);
-      onClose();                  // ← was missing before
-    } else if (isGoal) {
-      // Highlight scorer, show assist prompt — don't record yet
-      setSelectedPlayer(player);
-    } else {
-      // All other stats — record and close immediately
-      onRecord(pendingStat, player);
+    if (phase === "assist") {
+      onRecord(
+        "goal",
+        selectedPlayer,
+        null,
+        player
+      );
       onClose();
+      return;
     }
+  
+    if (isGoal) {
+      setSelectedPlayer(player);
+      return;
+    }
+  
+    onRecord(pendingStat, player);
+    onClose();
   };
 
   const handleAssist = (yes) => {
-    // Record the goal now that we have the scorer confirmed
-    onRecord('goal', selectedPlayer);
-    if (yes) {
-      // Switch modal to assist picker
-      setPhase('assist');
-      setSelectedPlayer(null);
-    } else {
-      // No assist — we're done, close
-      onClose();                  // ← was missing before
+    if (!yes) {
+      onRecord(
+        "goal",
+        selectedPlayer,
+        null,
+        null
+      );
+      onClose();
+      return;
     }
+  
+    setPhase("assist");
   };
 
   return (
@@ -77,7 +87,9 @@ export default function PlayerModal({
       </div>
 
       <div style={styles.grid}>
-        {fieldPlayers.map((p) => {
+      {fieldPlayers
+        .filter(p => phase !== "assist" || p.id !== selectedPlayer?.id)
+        .map((p) => {
           const isSelected = selectedPlayer?.id === p.id;
           const isFogo     = isFO && p.pos === 'FOGO';
           return (
