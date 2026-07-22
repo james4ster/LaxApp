@@ -35,6 +35,12 @@ export default function PlayerModal({
   const showAssistFooter = isGoal && selectedPlayer && phase === 'pick';
 
   const handlePlayerTap = (player) => {
+    console.log("PLAYER TAP:", {
+      phase,
+      selectedPlayer,
+      tappedPlayer: player
+    });
+    
     if (phase === "assist") {
       onRecord(
         "goal",
@@ -56,6 +62,8 @@ export default function PlayerModal({
   };
 
   const handleAssist = (yes) => {
+    console.log("ASSIST BUTTON:", yes, selectedPlayer);
+  
     if (!yes) {
       onRecord(
         "goal",
