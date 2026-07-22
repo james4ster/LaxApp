@@ -504,6 +504,10 @@ if (player && !goalie) {
     const ids = events
       .map(e => e.insertedId)
       .filter(Boolean);
+      console.log("UNDO DEBUG", {
+        events,
+        ids,
+        allEvents: allEventsRef.current});
   
     if (ids.length) {
       console.log("UNDO EVENTS", events);
@@ -521,18 +525,17 @@ if (player && !goalie) {
       );
   
       if (gameId) {
-        const { error, count } = await supabase
+        const { data, error } = await supabase
           .from('game_events')
-          .delete({ count: 'exact' })
-          .in('id', ids);
+          .delete()
+          .in('id', ids)
+          .select();
 
-        console.log("DELETE COUNT", count, error);
-
-          console.log("DELETE RESULT", {
-            ids,
-            data,
-            error,
-          });
+        console.log("DELETE RESULT", {
+          ids,
+          data,
+          error
+        });
   
         if (error) {
           console.error('Failed to delete undone event', error);
