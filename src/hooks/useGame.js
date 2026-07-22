@@ -518,15 +518,17 @@ const undoLast = useCallback(() => {
     // Delete from DB
     if (gameId) {
       supabase
-        .from('game_events')
-        .delete()
-        .in('id', ids)
-        .then(({ error }) => {
-          if (error) {
-            console.error('Failed to delete undone event', error);
-            lastEvent.current = events;
-          }
-        });
+      .from('game_events')
+      .delete()
+      .in('id', ids)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Failed to delete undone event', error);
+          lastEvent.current = events;
+        } else {
+          lastEvent.current = [];
+        }
+      });
     }
 
   } else {
