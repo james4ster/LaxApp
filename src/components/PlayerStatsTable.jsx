@@ -161,11 +161,16 @@ export default function PlayerStatsTable({
 
       {goalies.map((g) => {
         const isActive = g.id === activeGoalie?.id;
-        const sv  = isActive ? saves : 0;
-        const gag = isActive ? ga    : 0;
-        const svp = isActive
-          ? (typeof svPct === 'function' ? svPct() : svPct)
+        const gs = playerStats[g.id] ?? {};
+
+        const gag = gs.g ?? 0;
+        const shots = gs.sog ?? 0;
+        const sv = Math.max(0, shots - gag);
+
+        const svp = shots > 0
+          ? `${Math.round((sv / shots) * 100)}%`
           : '–';
+
         return (
           <div key={g.id} style={{ ...S.row, gridTemplateColumns: gTemplate }}>
             <div style={S.pNum}>{g.num}</div>
@@ -175,7 +180,9 @@ export default function PlayerStatsTable({
             </div>
             <div style={S.val}>{sv}</div>
             <div style={S.val}>{gag}</div>
-            <div style={{ ...S.val, color: 'var(--tp)', fontWeight: 800 }}>{svp}</div>
+            <div style={{ ...S.val, color: 'var(--tp)', fontWeight: 800 }}>
+              {svp}
+            </div>
           </div>
         );
       })}

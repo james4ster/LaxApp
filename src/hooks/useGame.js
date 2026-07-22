@@ -37,7 +37,18 @@ const periodToInt = (q) => {
 function initPlayerStats(players) {
   const map = {};
   players.forEach(p => {
-    map[p.id] = { g: 0, a: 0, gb: 0, to: 0, fo_w: 0, fo_l: 0, pen: 0, sog: 0 };
+    map[p.id] = { 
+      g: 0,
+      a: 0,
+      gb: 0,
+      to: 0,
+      fo_w: 0,
+      fo_l: 0,
+      pen: 0,
+      sog: 0,
+      shots: 0,
+      ga: 0
+    };
   });
   return map;
 }
@@ -47,7 +58,7 @@ function emptyQuarterBucket() {
 }
 
 function applyEvent(state, ev) {
-  const { stat_key: key, player_id, period, strength, value } = ev;
+  const { stat_key: key, player_id, goalie_id, period, strength, value } = ev;
   const counts      = { ...state.counts };
   const playerStats = { ...state.playerStats };
   const quarterStats = { ...state.quarterStats };
@@ -96,6 +107,16 @@ function applyEvent(state, ev) {
     if (key === 'to')     ps.to++;
     if (key === 'fo_w')   ps.fo_w++;
     if (key === 'fo_l')   ps.fo_l++;
+    
+    // goalie stats
+    if (key === 'oshot') {
+      ps.shots = (ps.shots ?? 0) + 1;
+    }
+
+    if (key === 'ogoal') {
+      ps.ga = (ps.ga ?? 0) + 1;
+      ps.shots = (ps.shots ?? 0) + 1;
+    }
     playerStats[player_id] = ps;
   }
 
@@ -228,7 +249,17 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   const qc    = useCallback((period, key) => quarterStats[String(period)]?.[key] ?? 0, [quarterStats]);
 
   // ── recordStat ─────────────────────────────────────────────────────────
-  const recordStat = useCallback(async (key, player = null, shotLocation = null, strength = null) => {
+  const recordStat = useCallback(async (
+    key,
+    player = null,
+    shotLocation = null,
+    strength = null
+  ) => {
+  
+    const goalie = (key === 'oshot' || key === 'ogoal')
+      ? activeGoalie
+      : null;
+  
     const periodInt = periodToInt(quarter);
 
     // Optimistic local update
@@ -271,7 +302,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
       allEventsRef.current = [...allEventsRef.current, data];
       if (lastEvent.current?.key === key) lastEvent.current.insertedId = data.id;
     }
-  }, [quarter, gameId]);
+  }, [quarter, gameId, activeGoalie]);
 
   // ── recordPenalty ──────────────────────────────────────────────────────
   const recordPenalty = useCallback(async (team, durationSec, player = null) => {
@@ -294,7 +325,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
 
     const { data, error } = await supabase
       .from('game_events')
-      .insert({ game_id: gameId, player_id: player?.id ?? null, stat_key: key, period: periodInt, value: durationSec, input_method: 'tap', client_event_id: clientEventId })
+      .insert({ game_id: gameId, player_id: player?.id ?? null, goalie_id: goalie?.id ?? null, stat_key: key, period: periodInt, value: durationSec, input_method: 'tap', client_event_id: clientEventId })
       .select().single();
 
     if (error) {
@@ -304,7 +335,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
       allEventsRef.current = [...allEventsRef.current, data];
       if (lastEvent.current?.key === key) lastEvent.current.insertedId = data.id;
     }
-  }, [quarter, gameId]);
+  }, [quarter, gameId, activeGoalie]);
 
   // ── undoLast ───────────────────────────────────────────────────────────
   const undoLast = useCallback(() => {
