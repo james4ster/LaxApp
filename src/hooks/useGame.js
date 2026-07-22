@@ -533,7 +533,7 @@ if (player && !goalie) {
 
         console.log("DELETE RESULT", {
           ids,
-          data,
+          count,
           error
         });
   
