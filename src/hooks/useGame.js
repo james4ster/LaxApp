@@ -342,17 +342,21 @@ if (player && !goalie) {
   }
     if (['goal', 'ogoal', 'sog', 'oshot'].includes(key)) setQuarterStats(prev => applyEvent({ counts: {}, playerStats: {}, quarterStats: prev }, { stat_key: key, player_id: null, period: periodInt, strength, value: 1 }).quarterStats);
 
-    lastEvent.current.push({
+    const undoEvent = {
       key,
       playerId: player?.id ?? null,
-      insertedId: null
-    });
+      insertedId: null,
+      clientEventId: null
+    };
+    
+    lastEvent.current.push(undoEvent);
 
     setLastLabel((STAT_LABELS[key] ?? key) + (player ? ` — #${player.num} ${player.name}` : ''));
 
     if (!gameId) return;
 
     const clientEventId = crypto.randomUUID();
+    undoEvent.clientEventId = clientEventId;
     localEventIds.current.add(clientEventId);
 
     console.log('PLAYER BEING SAVED:', player);
@@ -386,11 +390,13 @@ if (player && !goalie) {
       else {
       // Add to our local log so undo works correctly
       allEventsRef.current = [...allEventsRef.current, data];
-      const last = lastEvent.current[lastEvent.current.length - 1];
-
-        if (last?.key === key) {
-          last.insertedId = data.id;
-        }
+      const match = lastEvent.current.find(
+        e => e.clientEventId === clientEventId
+      );
+      
+      if (match) {
+        match.insertedId = data.id;
+      }
     }
   }, [quarter, gameId, activeGoalie]);
 
@@ -403,11 +409,15 @@ if (player && !goalie) {
     setCounts(prev => ({ ...prev, [key]: (prev[key] ?? 0) + 1, [secKey]: (prev[secKey] ?? 0) + durationSec }));
     if (player) setPlayerStats(prev => { const ps = { ...prev[player.id] }; ps.pen = (ps.pen ?? 0) + 1; return { ...prev, [player.id]: ps }; });
 
-    lastEvent.current.push({
+    const undoEvent = {
       key,
       playerId: player?.id ?? null,
-      insertedId: null
-    });
+      insertedId: null,
+      clientEventId: null
+    };
+    
+    lastEvent.current.push(undoEvent);
+
     const mins = Math.floor(durationSec / 60), secs = durationSec % 60;
     const durLabel = mins > 0 ? `${mins}:${secs < 10 ? '0' : ''}${secs}` : `${secs}s`;
     setLastLabel(`Penalty (${durLabel})${player ? ` — #${player.num} ${player.name}` : team === 'us' ? ' — Us' : ' — Them'}`);
@@ -415,6 +425,7 @@ if (player && !goalie) {
     if (!gameId) return;
 
     const clientEventId = crypto.randomUUID();
+    undoEvent.clientEventId = clientEventId;
     localEventIds.current.add(clientEventId);
 
     const { data, error } = await supabase
@@ -427,17 +438,20 @@ if (player && !goalie) {
       localEventIds.current.delete(clientEventId);
     } else {
       allEventsRef.current = [...allEventsRef.current, data];
-      const last = lastEvent.current[lastEvent.current.length - 1];
-
-        if (last?.key === key) {
-          last.insertedId = data.id;
-        }
+      const match = lastEvent.current.find(
+        e => e.clientEventId === clientEventId
+      );
+      
+      if (match) {
+        match.insertedId = data.id;
+      }
     }
   }, [quarter, gameId, activeGoalie]);
 
   // ── undoLast ───────────────────────────────────────────────────────────
 const undoLast = useCallback(() => {
   const events = lastEvent.current;
+  console.log("UNDO EVENTS:", events);
 
   if (!events.length) return;
 
