@@ -251,17 +251,15 @@ export default function Track({
           Last: <strong style={{ color: 'var(--txt)', fontWeight: 600 }}>{lastLabel}</strong>
         </div>
         <div style={S.barRight}>
-        <button 
-          style={S.undoBtn}
-          onClick={() => {
-            console.log("UNDO BUTTON CLICKED");
-            console.log("onUndo function:", onUndo);
-            onUndo?.();
-          }}
-          disabled={gameEnded}
-        >
-          ↩ Undo
-        </button>
+        <button
+  style={S.undoBtn}
+  onClick={() => {
+    console.log("BUTTON CLICK");
+    onUndo();
+  }}
+>
+  ↩ Undo
+</button>
           <EndGameButton
             onConfirmed={() => setShowEndGameModal(true)}
             disabled={gameEnded}
