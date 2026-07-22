@@ -105,6 +105,7 @@ export default function Track({
   goalies,
   activeGoalie,
   onChangeGoalie,
+  playerStats,
   onRecordStat,
   lastLabel,
   onUndo,
@@ -185,7 +186,7 @@ export default function Track({
          <GoalieBar
           goalies={goalies}
           activeGoalie={activeGoalie}
-          onChangeGoalie={setActiveGoalie}
+          onChangeGoalie={onChangeGoalie}
           saves={saves()}
           ga={ga}
           svPct={svPct()}

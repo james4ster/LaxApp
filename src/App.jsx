@@ -71,32 +71,33 @@ export default function App() {
       />
 
       <div style={{ ...styles.page, display: tab === 'track' ? 'flex' : 'none' }}>
-        <Track
-          counts={counts}
-          fieldPlayers={fieldPlayers}
-          goalies={goalies}
-          activeGoalie={activeGoalie}
-          onChangeGoalie={setActiveGoalie}
-          onRecordStat={handleRecordStat}
-          lastLabel={lastLabel}
-          onUndo={undoLast}
-          saves={saves()}
-          ga={counts.ogoal}
-          svPct={svPct()}
-          possState={possState}
-          usMs={usMs}
-          themMs={themMs}
-          usPct={usPct}
-          themPct={themPct}
-          totalMs={totalMs}
-          onSetPoss={setPoss}
-          role={role}
-          onEndGame={handleEndGame}
-          onRecordPenalty={recordPenalty}
-          strength={strength}
-          onSetStrength={setStrength}
-          gameEnded={gameEnded}
-        />
+      <Track
+        counts={counts}
+        fieldPlayers={fieldPlayers}
+        goalies={goalies}
+        activeGoalie={activeGoalie}
+        onChangeGoalie={setActiveGoalie}
+        playerStats={playerStats}
+        onRecordStat={handleRecordStat}
+        lastLabel={lastLabel}
+        onUndo={undoLast}
+        saves={saves()}
+        ga={counts.ogoal}
+        svPct={svPct()}
+        possState={possState}
+        usMs={usMs}
+        themMs={themMs}
+        usPct={usPct}
+        themPct={themPct}
+        totalMs={totalMs}
+        onSetPoss={setPoss}
+        role={role}
+        onEndGame={handleEndGame}
+        onRecordPenalty={recordPenalty}
+        strength={strength}
+        onSetStrength={setStrength}
+        gameEnded={gameEnded}
+      />
       </div>
 
       <div style={{ ...styles.page, display: tab === 'fan' ? 'flex' : 'none' }}>
