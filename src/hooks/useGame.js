@@ -289,7 +289,45 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
 
     // Optimistic local update
     setCounts(prev => applyEvent({ counts: prev, playerStats: {}, quarterStats: {} }, { stat_key: key, player_id: null, goalie_id: goalie?.id ?? null, period: periodInt, strength, value: 1 }).counts);
-    if (player && !goalie) setPlayerStats(prev => applyEvent({ counts: {}, playerStats: prev, quarterStats: {} }, { stat_key: key, player_id: player.id, period: periodInt, strength, value: 1 }).playerStats);
+    // update field player
+if (player && !goalie) {
+  setPlayerStats(prev =>
+    applyEvent(
+      {
+        counts: {},
+        playerStats: prev,
+        quarterStats: {}
+      },
+      {
+        stat_key:key,
+        player_id:player.id,
+        period:periodInt,
+        strength,
+        value:1
+      }
+    ).playerStats
+  );
+}
+
+// update goalie
+if (goalie) {
+  setPlayerStats(prev =>
+    applyEvent(
+      {
+        counts:{},
+        playerStats:prev,
+        quarterStats:{}
+      },
+      {
+        stat_key:key,
+        goalie_id:goalie.id,
+        period:periodInt,
+        strength,
+        value:1
+      }
+    ).playerStats
+  );
+}
     if (['goal', 'ogoal', 'sog', 'oshot'].includes(key)) setQuarterStats(prev => applyEvent({ counts: {}, playerStats: {}, quarterStats: prev }, { stat_key: key, player_id: null, period: periodInt, strength, value: 1 }).quarterStats);
 
     lastEvent.current = { key, playerId: player?.id ?? null, insertedId: null };

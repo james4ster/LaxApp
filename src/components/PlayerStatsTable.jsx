@@ -156,7 +156,6 @@ export default function PlayerStatsTable({
       </div>
 
       {goalies.map((g) => {
-        const isActive = g.id === activeGoalie?.id;
         const gs = playerStats[g.id] ?? {};
 
         const gag = gs.ga ?? 0;
