@@ -59,16 +59,18 @@ function emptyQuarterBucket() {
 }
 
 function applyEvent(state, ev) {
+  const { stat_key: key, player_id, goalie_id, period, strength, value } = ev;
+  const counts      = { ...state.counts };
+  const playerStats = { ...state.playerStats };
+  const quarterStats = { ...state.quarterStats };
+
   console.log(
     "GOALIE EVENT",
     key,
     goalie_id,
     playerStats[goalie_id]
   );
-  const { stat_key: key, player_id, goalie_id, period, strength, value } = ev;
-  const counts      = { ...state.counts };
-  const playerStats = { ...state.playerStats };
-  const quarterStats = { ...state.quarterStats };
+  
 
   if (key === 'pen_us' || key === 'pen_them') {
     counts[key] = (counts[key] ?? 0) + 1;
