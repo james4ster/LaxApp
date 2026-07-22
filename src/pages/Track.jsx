@@ -157,6 +157,12 @@ export default function Track({
     }
   };
 
+  console.log('GOALIE DEBUG', {
+    onChangeGoalie,
+    type: typeof onChangeGoalie,
+    activeGoalie
+  });
+  
   const show = (id) => visibleSectionIds.includes(id);
 
   return (
@@ -192,7 +198,9 @@ export default function Track({
           svPct={svPct}
           playerStats={playerStats}
        />
-        )}
+        )
+        }
+
 
         {/* ── SCORING ── */}
         {show('scoring') && (
