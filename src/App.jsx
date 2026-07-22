@@ -10,6 +10,7 @@ import { useGameContext } from './hooks/useGameContext';
 import { useTheme } from './hooks/useTheme';
 import { useStrength } from './hooks/useStrength';
 import './styles/globals.css';
+import InstallPrompt from './components/InstallPrompt';
 
 // TODO: replace with real game-selection screen once GameSelect is wired up
 const ACTIVE_GAME_ID = 'ac84353f-3354-4cbc-8bdf-cb86763edea1';
@@ -135,6 +136,7 @@ export default function App() {
       </div>
 
       <BottomNav activeTab={tab} onTabChange={setTab} />
+      <InstallPrompt />
     </div>
   );
 }
@@ -143,7 +145,7 @@ const styles = {
   app: {
     maxWidth:  480,
     margin:    '0 auto',
-    height:    '100dvh',
+    height:    'calc(var(--vh, 1dvh) * 100)',
     display:   'flex',
     flexDirection: 'column',
     overflow:  'hidden',
