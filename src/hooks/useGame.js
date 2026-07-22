@@ -298,7 +298,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
         filter: `game_id=eq.${gameId}`
       },
       async (payload) => {
-        console.log('REALTIME DELETE RECEIVED:', payload);
+        console.log("DELETE PAYLOAD", payload.old);
 
         // Always reload from DB after deletes
         // because multiple events can be deleted together (goal + assist)
@@ -505,7 +505,8 @@ if (player && !goalie) {
       .filter(Boolean);
   
     if (ids.length) {
-  
+      console.log("UNDO EVENTS", events);
+      console.log("UNDO IDS", ids);
       // Remove locally first
       allEventsRef.current = allEventsRef.current.filter(
         e => !ids.includes(e.id)
@@ -525,12 +526,11 @@ if (player && !goalie) {
           .in('id', ids)
           .select();
 
-        console.log("UNDO DELETE RESULT:", {
-          ids,
-          data,
-          error,
-          count
-        });
+          console.log("DELETE RESULT", {
+            ids,
+            data,
+            error,
+          });
   
         if (error) {
           console.error('Failed to delete undone event', error);
