@@ -182,14 +182,15 @@ export default function Track({
 
         {/* Goalie */}
         {ROLE_SHOWS_GOALIE[role] && (
-          <GoalieBar
-            goalies={goalies}
-            activeGoalie={activeGoalie}
-            onChangeGoalie={gameEnded ? undefined : onChangeGoalie}
-            saves={saves}
-            ga={ga}
-            svPct={svPct}
-          />
+         <GoalieBar
+          goalies={goalies}
+          activeGoalie={activeGoalie}
+          onChangeGoalie={setActiveGoalie}
+          saves={saves()}
+          ga={ga}
+          svPct={svPct()}
+          playerStats={playerStats}
+        />
         )}
 
         {/* ── SCORING ── */}

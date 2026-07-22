@@ -7,6 +7,7 @@ export default function GoalieBar({
   saves,
   ga,
   svPct,
+  playerStats,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -53,7 +54,19 @@ export default function GoalieBar({
                 <div style={styles.ddNum}>#{g.num}</div>
                 <div style={styles.ddName}>{g.name}</div>
                 <div style={styles.ddStats}>
-                  {isActive ? `${saves} sv · ${ga} GA` : 'Not yet played'}
+                  {(() => {
+                    const gs = playerStats[g.id] ?? {};
+                    const played = (gs.shots ?? 0) > 0 || (gs.ga ?? 0) > 0;
+
+                    if (!played) return 'Not yet played';
+
+                    const goalieSaves = Math.max(
+                      0,
+                      (gs.shots ?? 0) - (gs.ga ?? 0)
+                    );
+
+                    return `${goalieSaves} sv · ${gs.ga ?? 0} GA`;
+                  })()}
                 </div>
                 {isActive && <div style={styles.ddCheck}>✓</div>}
               </div>
