@@ -145,6 +145,14 @@ export default function Track({
       assistPlayer
     });
   
+    console.log("USEGAME RECORD STAT ARGS", {
+      key,
+      player,
+      shotLocation,
+      strength,
+      assistPlayer
+    });
+    
     if (key === 'pen' && pendingPenalty) {
       onRecordPenalty?.(pendingPenalty.team, pendingPenalty.sec, player);
       setPendingPenalty(null);
@@ -153,7 +161,6 @@ export default function Track({
         key,
         player,
         location,
-        null,
         assistPlayer
       );
     }
