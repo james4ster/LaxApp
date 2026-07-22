@@ -495,79 +495,59 @@ if (player && !goalie) {
 
   // ── undoLast ───────────────────────────────────────────────────────────
   const undoLast = useCallback(async () => {
-    const events = lastEvent.current;
-    console.log("=== UNDO START ===");
-    console.log("LAST EVENT STACK:", lastEvent.current);
-  
-    if (!events.length) return;
-  
-    const ids = events
-      .map(e => e.insertedId)
-      .filter(Boolean);
-      console.log("UNDO DEBUG", {
-        events,
-        ids,
-        allEvents: allEventsRef.current});
-  
-    if (ids.length) {
-      console.log("UNDO EVENTS", events);
-      console.log("UNDO IDS", ids);
-      // Remove locally first
-      allEventsRef.current = allEventsRef.current.filter(
-        e => !ids.includes(e.id)
-      );
-  
-      applyState(
-        rebuildFromEvents(
-          allEventsRef.current,
-          playersRef.current
-        )
-      );
-  
-      if (gameId) {
-        const { data, error } = await supabase
-          .from('game_events')
-          .delete()
-          .in('id', ids)
-          .select();
 
+    console.log("=== UNDO START ===");
+  
+    const events = allEventsRef.current;
+  
+    console.log("ALL EVENTS:", events);
+  
+    if (!events.length) {
+      console.log("NOTHING TO UNDO");
+      return;
+    }
+  
+    const last = events[events.length - 1];
+  
+    const ids = [last.id];
+  
+    console.log("UNDO DELETE IDS:", ids);
+  
+  
+    // Remove locally immediately
+    allEventsRef.current = allEventsRef.current.filter(
+      e => e.id !== last.id
+    );
+  
+    applyState(
+      rebuildFromEvents(
+        allEventsRef.current,
+        playersRef.current
+      )
+    );
+  
+  
+    if (gameId) {
+      const { data, error } = await supabase
+        .from('game_events')
+        .delete()
+        .in('id', ids)
+        .select();
+  
         console.log("DELETE RESULT", {
           ids,
-          count,
+          data,
           error
         });
   
-        if (error) {
-          console.error('Failed to delete undone event', error);
-          lastEvent.current = events;
-          return;
-        }
+      if (error) {
+        console.error("Failed to delete undone event", error);
+        return;
       }
   
-    } else {
-  
-      // No DB ids yet, only reverse local pending events
-      setCounts(prev => {
-        const next = { ...prev };
-  
-        events.forEach(ev => {
-          next[ev.key] = Math.max(0, (next[ev.key] ?? 0) - 1);
-  
-          if (ev.key === 'goal') {
-            next.sog = Math.max(0, (next.sog ?? 0) - 1);
-          }
-  
-          if (ev.key === 'ogoal') {
-            next.oshot = Math.max(0, (next.oshot ?? 0) - 1);
-          }
-        });
-  
-        return next;
-      });
+      console.log("DELETE PAYLOAD", data);
     }
   
-    // only clear after successful undo path
-    lastEvent.current = [];
     setLastLabel('–');
   
   }, [gameId, applyState]);
