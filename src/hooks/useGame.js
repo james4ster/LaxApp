@@ -422,6 +422,7 @@ if (player && !goalie) {
     localEventIds.current.add(clientEventId);
 
     console.log('PLAYER BEING SAVED:', player);
+    console.log('ASSIST BEING SAVED:', assistPlayer);
     
     const { data, error } = await supabase
       .from('game_events')
