@@ -184,6 +184,7 @@ export default function Track({
   };
 
   const handleRecord = (key, player, location, assistPlayer) => {
+    console.log("🔥 TRACK VERSION 7/23 DEPLOYED");
     console.log("TRACK HANDLE RECORD:", {
       key,
       player,
