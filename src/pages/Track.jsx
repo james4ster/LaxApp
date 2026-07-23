@@ -1,5 +1,5 @@
 /* redeploy */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import PlayerModal    from '../components/PlayerModal';
 import EndGameButton  from '../components/EndGameButton';
 import FinalScoreModal from '../components/FinalScoreModal';
