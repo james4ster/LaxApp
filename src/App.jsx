@@ -111,7 +111,12 @@ export default function App() {
   }, [gameEnded, markLive, setPoss]);
 
   return (
-    <div style={styles.app}>
+  <>
+  <div className="landscape-warning">
+      ↻ Rotate your phone back to portrait mode to use LaxLive
+    </div>
+
+    <div className="app-shell" style={styles.app}>
       <ScoreStrip
         scoreUs={counts.goal}
         scoreThem={counts.ogoal}
@@ -190,6 +195,7 @@ export default function App() {
       <BottomNav activeTab={tab} onTabChange={setTab} />
       <InstallPrompt />
     </div>
+  </>
   );
 }
 

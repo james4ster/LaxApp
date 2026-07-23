@@ -127,3 +127,33 @@
     background: var(--surf2);
     border-top: 1px solid var(--bdr);
   }
+
+  /* =====================================================
+   MOBILE ORIENTATION
+   LaxLive is optimized for portrait scoring
+   ===================================================== */
+
+   .landscape-warning {
+    display: none;
+  }
+  
+  @media screen and (orientation: landscape) and (max-width: 900px) {
+    .landscape-warning {
+      display: flex;
+      height: 100vh;
+      height: calc(var(--vh, 1vh) * 100);
+      width: 100vw;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--txt);
+      background: var(--bg);
+    }
+  
+    .app-shell {
+      display: none;
+    }
+  }
