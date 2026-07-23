@@ -121,7 +121,7 @@ export default function App() {
         scoreUs={counts.goal}
         scoreThem={counts.ogoal}
         quarter={quarter}
-        onQuarterChange={gameEnded ? undefined : setQuarter}
+        onQuarterChange={gameEnded || tab === 'fan' ? undefined : setQuarter}
         isDark={isDark}
         onToggleDark={toggleDark}
       />
