@@ -64,14 +64,6 @@ function applyEvent(state, ev) {
   const playerStats = { ...state.playerStats };
   const quarterStats = { ...state.quarterStats };
 
-  console.log(
-    "GOALIE EVENT",
-    key,
-    goalie_id,
-    playerStats[goalie_id]
-  );
-  
-
   if (key === 'pen_us' || key === 'pen_them') {
     counts[key] = (counts[key] ?? 0) + 1;
   
@@ -320,9 +312,8 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
       }
     )
     .subscribe((status) => {
-      console.log('GAME EVENT CHANNEL STATUS:', status);
-
-      if (status === 'SUBSCRIBED') {
+     
+    if (status === 'SUBSCRIBED') {
         refreshEvents();
       }
     });
