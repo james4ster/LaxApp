@@ -12,8 +12,9 @@
     --tat: #0d2a0a;   /* text on accent         */
   
     /* Opponent palette — fixed, not overridden by team presets */
-    --opp:  #9b1c1c;  /* opponent primary (muted red)  */
-    --oppt: #ffffff;  /* text on opponent              */
+    --opp:     #9b1c1c;
+    --oppt:    #ffffff;
+    --opp-acc: #ff9090;  /* light accent for numbers on them-colored buttons */
   
     /* Light mode surfaces */
     --bg:    #efefed;
@@ -48,8 +49,9 @@
   
     /* Opponent in dark mode — slightly brighter red so it reads
        clearly against dark surfaces without being garish */
-    --opp:  #c0282a;
-    --oppt: #ffffff;
+       --opp:     #c0282a;
+       --oppt:    #ffffff;
+       --opp-acc: #ffb0b0;
   }
   
   /* =====================================================
