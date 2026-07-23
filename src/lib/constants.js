@@ -4,7 +4,6 @@ export const MY_TEAM_ID = 'ac84353f-3354-4cbc-8bdf-cb86763edea1';
 // ── Stat keys that require player attribution ──────────────────────────────
 export const NEEDS_PLAYER = new Set([
   'goal',
-  'sog',
   'miss',
   'gb',
   'cto',
@@ -18,7 +17,6 @@ export const NEEDS_PLAYER = new Set([
 export const STAT_LABELS = {
   goal: 'Goal For',
   ogoal: 'Goal Against',
-  sog: 'SOG',
   miss: 'Shot Missed',
   oshot: 'Opp Shot',
   gb: 'Ground Ball',
@@ -33,7 +31,6 @@ export const STAT_LABELS = {
 // ── Player modal prompt per stat ───────────────────────────────────────────
 export const STAT_PROMPTS = {
   goal: 'Who scored?',
-  sog:  'Who took the shot?',
   miss: 'Who took the shot?',
   gb: 'Who got the ground ball?',
   cto: 'Who caused the turnover?',
@@ -45,54 +42,48 @@ export const STAT_PROMPTS = {
 
 // ── Stat button definitions per section ───────────────────────────────────
 // color: c-lime | c-green | c-slate | c-gray | c-red | c-orange
+/**
+ * STAT_SECTIONS — row-based format for the two-column Us/Them layout.
+ *
+ * Each section has an array of rows. Each row has:
+ *   us:   { key, label } — left column (us-colored)
+ *   them: { key, label } — right column (them-colored)
+ *
+ * Either side can be null for a full-width single button (future use).
+ *
+ * EXTENSIBILITY: Team-defined custom stats from Supabase are injected as
+ * additional sections (same shape) via the `customSections` prop on Track.
+ * No changes needed here to support them.
+ */
 export const STAT_SECTIONS = [
   {
     id: 'scoring',
     label: 'Scoring',
-    stats: [
-      { key: 'goal', label: 'Goal For', color: 'c-lime', sub: 'us scored' },
-      {
-        key: 'ogoal',
-        label: 'Goal Against',
-        color: 'c-red',
-        sub: 'they scored',
-      },
+    rows: [
+      { us: { key: 'goal',  label: 'Goal For'     }, them: { key: 'ogoal', label: 'Goal Against' } },
     ],
   },
   {
     id: 'shots',
     label: 'Shots',
-    stats: [
-      {
-        key: 'miss',
-        label: 'Shot Missed',
-        color: 'c-slate',
-        sub: 'us · off cage',
-      },
-      {
-        key: 'oshot',
-        label: 'Opp Shot',
-        color: 'c-gray',
-        sub: 'them · on cage',
-      },
+    rows: [
+      { us: { key: 'sog',  label: 'Shot On Goal' }, them: { key: 'oshot', label: 'Shot Against' } },
+      { us: { key: 'miss', label: 'Shot Missed'  }, them: { key: 'omiss', label: 'Miss — Them'  } },
     ],
   },
   {
     id: 'field',
     label: 'Field',
-    stats: [
-      { key: 'gb', label: 'Ground Ball', color: 'c-green', sub: 'us' },
-      { key: 'cto', label: 'Caused TO', color: 'c-green', sub: 'us' },
-      { key: 'to', label: 'Turnover', color: 'c-orange', sub: 'us gave it up' },
-      { key: 'interc', label: 'Interception', color: 'c-slate', sub: 'us' },
+    rows: [
+      { us: { key: 'gb',  label: 'Ground Ball' }, them: { key: 'gb_them', label: 'GB — Them' } },
+      { us: { key: 'cto', label: 'Caused TO'   }, them: { key: 'to',      label: 'Turnover'  } },
     ],
   },
   {
     id: 'faceoffs',
     label: 'Faceoffs',
-    stats: [
-      { key: 'fo_w', label: 'FO Win', color: 'c-green', sub: 'we won it' },
-      { key: 'fo_l', label: 'FO Loss', color: 'c-gray', sub: 'they won it' },
+    rows: [
+      { us: { key: 'fo_w', label: 'FO Win' }, them: { key: 'fo_l', label: 'FO Loss' } },
     ],
   },
 ];
@@ -168,16 +159,14 @@ export const FIELD_COLS = [
   { key: 'a', label: 'A', width: '24px', align: 'center' },
   { key: 'pts', label: 'Pts', width: '28px', align: 'center' },
   { key: 'gb', label: 'GB', width: '24px', align: 'center' },
-  { key: 'sog', label: 'SOG', width: '32px', align: 'center' },
   { key: 'to', label: 'TO', width: '24px', align: 'center' },
   { key: 'fo', label: 'FO', width: '36px', align: 'center' },
 ];
 
 export const GOALIE_COLS = [
-  { key: 'num',  label: '#',     width: '24px', align: 'right' },
+  { key: 'num', label: '#', width: '20px', align: 'right' },
   { key: 'name', label: 'Goalie', width: '1fr', align: 'left' },
-  { key: 'sog',  label: 'SOG',   width: '36px', align: 'center' },
-  { key: 'sv',   label: 'SV',    width: '36px', align: 'center' },
-  { key: 'ga',   label: 'GA',    width: '36px', align: 'center' },
-  { key: 'svp',  label: 'SV%',   width: '44px', align: 'center' },
+  { key: 'sv', label: 'SV', width: '28px', align: 'center' },
+  { key: 'ga', label: 'GA', width: '28px', align: 'center' },
+  { key: 'svp', label: 'SV%', width: '36px', align: 'center' },
 ];
