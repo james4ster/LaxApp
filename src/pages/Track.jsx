@@ -192,7 +192,6 @@ export default function Track({
         key,
         player,
         location,
-        strength,
         assistPlayer
       );
     }
