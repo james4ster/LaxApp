@@ -9,13 +9,11 @@ export default function PlayerModal({
   onClose,
 }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [assistPlayer, setAssistPlayer] = useState(null);
   const [phase, setPhase] = useState('pick');
 
   useEffect(() => {
     if (isOpen) {
       setSelectedPlayer(null);
-      setAssistPlayer(null);
       setPhase('pick');
     }
   }, [isOpen, pendingStat]);
