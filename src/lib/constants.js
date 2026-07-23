@@ -5,6 +5,7 @@ export const MY_TEAM_ID = 'ac84353f-3354-4cbc-8bdf-cb86763edea1';
 export const NEEDS_PLAYER = new Set([
   'goal',
   'miss',
+  'sog',
   'gb',
   'cto',
   'to',
@@ -31,6 +32,7 @@ export const STAT_LABELS = {
 // ── Player modal prompt per stat ───────────────────────────────────────────
 export const STAT_PROMPTS = {
   goal: 'Who scored?',
+  sog:  'Who took the shot?',
   miss: 'Who took the shot?',
   gb: 'Who got the ground ball?',
   cto: 'Who caused the turnover?',
@@ -153,20 +155,22 @@ export const COLOR_PRESETS = [
 
 // ── Player stats table column definitions ─────────────────────────────────
 export const FIELD_COLS = [
-  { key: 'num', label: '#', width: '20px', align: 'right' },
-  { key: 'name', label: 'Player', width: '1fr', align: 'left' },
-  { key: 'g', label: 'G', width: '24px', align: 'center' },
-  { key: 'a', label: 'A', width: '24px', align: 'center' },
-  { key: 'pts', label: 'Pts', width: '28px', align: 'center' },
-  { key: 'gb', label: 'GB', width: '24px', align: 'center' },
-  { key: 'to', label: 'TO', width: '24px', align: 'center' },
-  { key: 'fo', label: 'FO', width: '36px', align: 'center' },
+  { key: 'num',  label: '#',      width: '20px', align: 'right'  },
+  { key: 'name', label: 'Player', width: '1fr',  align: 'left'   },
+  { key: 'g',    label: 'G',      width: '24px', align: 'center' },
+  { key: 'a',    label: 'A',      width: '24px', align: 'center' },
+  { key: 'pts',  label: 'Pts',    width: '28px', align: 'center' },
+  { key: 'sog',  label: 'SOG',    width: '28px', align: 'center' },
+  { key: 'gb',   label: 'GB',     width: '24px', align: 'center' },  
+  { key: 'to',   label: 'TO',     width: '24px', align: 'center' },
+  { key: 'fo',   label: 'FO',     width: '36px', align: 'center' },
 ];
 
 export const GOALIE_COLS = [
-  { key: 'num', label: '#', width: '20px', align: 'right' },
-  { key: 'name', label: 'Goalie', width: '1fr', align: 'left' },
-  { key: 'sv', label: 'SV', width: '28px', align: 'center' },
-  { key: 'ga', label: 'GA', width: '28px', align: 'center' },
-  { key: 'svp', label: 'SV%', width: '36px', align: 'center' },
+  { key: 'num',   label: '#',      width: '20px', align: 'right'  },
+  { key: 'name',  label: 'Goalie', width: '1fr',  align: 'left'   },
+  { key: 'shots', label: 'SA',     width: '28px', align: 'center' },
+  { key: 'sv',    label: 'SV',     width: '28px', align: 'center' },
+  { key: 'ga',    label: 'GA',     width: '28px', align: 'center' },
+  { key: 'svp',   label: 'SV%',    width: '36px', align: 'center' },
 ];
