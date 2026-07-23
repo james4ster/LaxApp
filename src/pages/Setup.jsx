@@ -115,7 +115,7 @@ export default function Setup({
           paddingBottom: 8,
         }}
       >
-        LaxTrack v1.0 — connect Supabase to go live
+        LaxTrack v1.0
       </div>
     </div>
   );
