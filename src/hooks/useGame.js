@@ -344,13 +344,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   const qc    = useCallback((period, key) => quarterStats[String(period)]?.[key] ?? 0, [quarterStats]);
 
   // ── recordStat ─────────────────────────────────────────────────────────
-  const recordStat = useCallback(async (
-    key,
-    player = null,
-    shotLocation = null,
-    strength = null,
-    assistPlayer = null
-  ) => {
+  const recordStat = useCallback(async (key, player = null, shotLocation = null, strength = null, assistPlayer = null) => {
   
     const goalie = (key === 'oshot' || key === 'ogoal')
       ? activeGoalie

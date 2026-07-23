@@ -69,12 +69,7 @@ export default function PlayerModal({
     console.log("ASSIST BUTTON:", yes, selectedPlayer);
   
     if (!yes) {
-      onRecord(
-        "goal",
-        selectedPlayer,
-        null,
-        null
-      );
+      onRecord('goal', scorer, shotLocation, assistPlayer)
       onClose();
       return;
     }

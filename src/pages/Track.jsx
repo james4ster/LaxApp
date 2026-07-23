@@ -183,28 +183,14 @@ export default function Track({
     else onRecordStat(key, null);
   };
 
-  const handleRecord = (key, player, location, assistPlayer) => {
-    console.log("🔥 TRACK VERSION 7/23 DEPLOYED");
-    console.log("TRACK HANDLE RECORD:", {
-      key,
-      player,
-      location,
-      assistPlayer
-    });
-
+  const handleRecord = useCallback((key, player, location, assistPlayer) => {
     if (key === 'pen' && pendingPenalty) {
       onRecordPenalty?.(pendingPenalty.team, pendingPenalty.sec, player);
       setPendingPenalty(null);
     } else {
-      onRecordStat(
-        key,
-        player,
-        location,
-        null,
-        assistPlayer
-      );
+      onRecordStat(key, player, location, assistPlayer);  // ← forwarded
     }
-  };
+  }, [pendingPenalty, onRecordStat, onRecordPenalty]);
 
   const handlePenaltyPick = (team, sec) => {
     if (gameEnded) return;
