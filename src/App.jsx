@@ -54,11 +54,17 @@ export default function App() {
   };
 
   // Thread current strength into stat recording so goals get tagged PP/PK
-  const handleRecordStat = (key, player, location, assistPlayer) => {
+  const handleRecordStat = (
+    key,
+    player,
+    location,
+    strength,
+    assistPlayer
+  ) => {
     console.log("APP RECORD STAT:", {
       key,
       player,
-      assistPlayer,
+      assistPlayer
     });
   
     recordStat(
