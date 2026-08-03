@@ -1,5 +1,4 @@
-/* redeploy */
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import PlayerModal    from '../components/PlayerModal';
 import EndGameButton  from '../components/EndGameButton';
 import FinalScoreModal from '../components/FinalScoreModal';
@@ -184,14 +183,14 @@ export default function Track({
     else onRecordStat(key, null);
   };
 
-  const handleRecord = useCallback((key, player, location, assistPlayer) => {
+  const handleRecord = (key, player, location) => {
     if (key === 'pen' && pendingPenalty) {
       onRecordPenalty?.(pendingPenalty.team, pendingPenalty.sec, player);
       setPendingPenalty(null);
     } else {
-      onRecordStat(key, player, location, assistPlayer);  // ← forwarded
+      onRecordStat(key, player, location);
     }
-  }, [pendingPenalty, onRecordStat, onRecordPenalty]);
+  };
 
   const handlePenaltyPick = (team, sec) => {
     if (gameEnded) return;

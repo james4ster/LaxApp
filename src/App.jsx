@@ -12,12 +12,24 @@ import { useStrength } from './hooks/useStrength';
 import { supabase } from './lib/supabase';
 import './styles/globals.css';
 import InstallPrompt from './components/InstallPrompt';
+import Dashboard from './pages/Dashboard';
+import Login from './auth/Login';
+import { useAuth } from './auth/AuthProvider';
+import TeamSetup from './pages/TeamSetup';
+import RosterSetup from './pages/RosterSetup';
+import ScheduleSetup from './pages/ScheduleSetup';
+//import Onboarding from './pages/Onboarding';
 
 const ACTIVE_GAME_ID = 'ac84353f-3354-4cbc-8bdf-cb86763edea1';
 const LS_KEY = `game_ended_${ACTIVE_GAME_ID}`;
 
 export default function App() {
-  const [tab,       setTab]       = useState('track');
+  const { user, loading } = useAuth();
+  console.log("AUTH STATE", { user, loading });
+
+  const [screen, setScreen] = useState('dashboard');
+  const [tab, setTab] = useState('track');
+  
   const [role,      setRole]      = useState('solo');
 
   const [gameEnded, setGameEnded] = useState(() => {
@@ -110,13 +122,68 @@ export default function App() {
     setPoss(side);
   }, [gameEnded, markLive, setPoss]);
 
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Login />;
+  }
+
+  // COACH PORTAL / SETUP FLOW
+if (screen === 'dashboard') {
+  return (
+    <div className="portal-shell">
+      <Dashboard onNext={() => setScreen('team')} />
+    </div>
+  );
+}
+
+if (screen === 'team') {
+  return (
+    <div className="portal-shell">
+      <TeamSetup onNext={() => setScreen('roster')} />
+    </div>
+  );
+}
+
+if (screen === 'roster') {
+  return (
+    <div className="portal-shell">
+      <RosterSetup onNext={() => setScreen('schedule')} />
+    </div>
+  );
+}
+
+if (screen === 'schedule') {
+  return (
+    <div className="portal-shell">
+      <ScheduleSetup onNext={() => setScreen('track')} />
+    </div>
+  );
+}
+
+  if (screen !== 'track') {
+    return null;
+  }
+
   return (
   <>
+  
   <div className="landscape-warning">
       ↻ Rotate your phone back to portrait mode to use LaxLive
     </div>
 
     <div className="app-shell" style={styles.app}>
+                  <div style={{
+                background: 'yellow',
+                width: '100%',
+                height: '50px',
+                color: 'black'
+              }}>
+                APP WIDTH TEST
+              </div>
       <ScoreStrip
         scoreUs={counts.goal}
         scoreThem={counts.ogoal}
@@ -125,6 +192,10 @@ export default function App() {
         isDark={isDark}
         onToggleDark={toggleDark}
       />
+
+      <div style={{ ...styles.page, display: tab === 'dashboard' ? 'flex' : 'none' }}>
+        <Dashboard />
+      </div>
 
       <div style={{ ...styles.page, display: tab === 'track' ? 'flex' : 'none' }}>
         <Track
@@ -201,14 +272,16 @@ export default function App() {
 
 const styles = {
   app: {
-    maxWidth:      480,
-    margin:        '0 auto',
-    height:        'calc(var(--vh, 1dvh) * 100)',
-    display:       'flex',
-    flexDirection: 'column',
-    overflow:      'hidden',
-    position:      'relative',
+    width:        '100%',
+    maxWidth:     '1400px',
+    margin:       '0 auto',
+    height: '100vh',
+    minHeight: '100vh',
+    display:      'flex',
+    flexDirection:'column',
+    position:     'relative',
   },
+
   page: {
     flex:          1,
     flexDirection: 'column',

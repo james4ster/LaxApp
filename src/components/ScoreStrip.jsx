@@ -54,7 +54,6 @@ export default function ScoreStrip({
   onQuarterChange,
   isDark,
   onToggleDark,
-  disableQuarterChange = false,
 }) {
   return (
     <div style={s.strip}>
@@ -67,24 +66,24 @@ export default function ScoreStrip({
       </div>
 
       <div style={s.qtabs}>
-      {[1, 2, 3, 4, 'OT','OT2'].map((q) => (
+      {[1, 2, 3, 4, 'OT'].map((q) => (
           <button
-          key={q}
-          onClick={() => !disableQuarterChange && onQuarterChange(q)}
-          style={{
-            padding: '3px 8px',
-            borderRadius: 5,
-            border: 'none',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '.2px',
-            cursor: disableQuarterChange ? 'default' : 'pointer',
-            opacity: 1,
-            background: quarter === q ? 'var(--ta)' : 'rgba(255,255,255,.1)',
-            color: quarter === q ? 'var(--tat)' : 'rgba(255,255,255,.3)',
-          }}
-        >
-            {q === 'OT' || q === 'OT2' ? q : `Q${q}`}
+            key={q}
+            onClick={() => onQuarterChange(q)}
+            style={{
+              padding: '3px 8px',
+              borderRadius: 5,
+              border: 'none',
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '.2px',
+              cursor: 'pointer',
+              background: quarter === q ? 'var(--ta)' : 'rgba(255,255,255,.1)',
+              color: quarter === q ? 'var(--tat)' : 'rgba(255,255,255,.3)',
+              transition: 'background .12s, color .12s',
+            }}
+          >
+            {q === 'OT' ? 'OT' : `Q${q}`}
           </button>
         ))}
       </div>

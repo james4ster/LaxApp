@@ -1,5 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { AuthProvider } from './auth/AuthProvider';
+
 
 // Fix mobile browser URL bar eating into viewport height.
 // Sets --vh to 1% of the actual visible window height, updated on resize.
@@ -17,7 +19,7 @@ import './styles/globals.css';
 import App from './App.jsx';
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
 );

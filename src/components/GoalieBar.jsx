@@ -4,7 +4,9 @@ export default function GoalieBar({
   goalies,
   activeGoalie,
   onChangeGoalie,
-  playerStats,
+  saves,
+  ga,
+  svPct,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -12,28 +14,6 @@ export default function GoalieBar({
     onChangeGoalie(g);
     setOpen(false);
   };
-
-  const currentGoalie = goalies.find(g => g.id === activeGoalie?.id);
-
-  const activeStats = currentGoalie
-    ? playerStats?.[currentGoalie.id] ?? {}
-    : {};
-
-  console.log("ACTIVE GOALIE DEBUG", {
-    activeGoalie,
-    activeStats,
-  });
-
-  const activeSaves = Math.max(
-    0,
-    (activeStats.shots ?? 0) - (activeStats.ga ?? 0)
-  );
-
-  const activeGA = activeStats.ga ?? 0;
-
-  const activeSVPct = activeStats.shots > 0
-    ? Math.round((activeSaves / activeStats.shots) * 100) + '%'
-    : '–';
 
   return (
     <div style={styles.bar}>
@@ -43,11 +23,11 @@ export default function GoalieBar({
           <div>
             <div style={styles.lbl}>Active Goalie</div>
             <div style={styles.name}>
-              {currentGoalie ? `#${currentGoalie.num} ${currentGoalie.name}` : '–'}
+              {activeGoalie ? `#${activeGoalie.num} ${activeGoalie.name}` : '–'}
             </div>
           </div>
           <div style={styles.stats}>
-            {activeSaves} sv · {activeGA} GA · {activeSVPct}
+            {saves} sv · {ga} GA · {svPct}
           </div>
         </div>
         <button onClick={() => setOpen((o) => !o)} style={styles.changeBtn}>
@@ -73,20 +53,7 @@ export default function GoalieBar({
                 <div style={styles.ddNum}>#{g.num}</div>
                 <div style={styles.ddName}>{g.name}</div>
                 <div style={styles.ddStats}>
-                  {(() => {
-                    console.log("DROPDOWN GOALIE", g.name, playerStats[g.id]);
-                    const gs = playerStats[g.id] ?? {};
-                    const played = (gs.shots ?? 0) > 0 || (gs.ga ?? 0) > 0;
-
-                    if (!played) return 'Not yet played';
-
-                    const calculatedSaves = Math.max(
-                      0,
-                      (gs.shots ?? 0) - (gs.ga ?? 0)
-                    );
-
-                    return `${calculatedSaves} sv · ${gs.ga ?? 0} GA`;
-                  })()}
+                  {isActive ? `${saves} sv · ${ga} GA` : 'Not yet played'}
                 </div>
                 {isActive && <div style={styles.ddCheck}>✓</div>}
               </div>

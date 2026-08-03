@@ -5,6 +5,10 @@ export default function PlayerStatsTable({
   fieldPlayers,
   goalies,
   playerStats,
+  activeGoalie,
+  saves,
+  ga,
+  svPct,
 }) {
   const [sortCol, setSortCol] = useState('pts');
   const [sortDir, setSortDir] = useState(-1); // -1 = desc, 1 = asc
@@ -28,7 +32,6 @@ export default function PlayerStatsTable({
         a: ps.a ?? 0,
         pts,
         gb: ps.gb ?? 0,
-        sog: ps.sog ?? 0,
         to: ps.to ?? 0,
         fo_w: ps.fo_w ?? 0,
         fo_l: ps.fo_l ?? 0,
@@ -128,13 +131,6 @@ export default function PlayerStatsTable({
           <div style={{ ...S.val, color: r.gb > 0 ? 'var(--txt)' : 'var(--txt2)' }}>
             {r.gb}
           </div>
-          <div style={{ 
-            ...S.val, 
-            color: r.sog > 0 ? 'var(--txt)' : 'var(--txt2)',
-            fontWeight: r.sog > 0 ? 700 : 400
-          }}>
-            {r.sog}
-          </div>
           <div style={{ ...S.val, color: r.to > 0 ? 'var(--danger)' : 'var(--txt2)' }}>
             {r.to}
           </div>
@@ -149,50 +145,29 @@ export default function PlayerStatsTable({
 
       <div style={{ ...S.row, ...S.hdr, gridTemplateColumns: gTemplate }}>
         {GOALIE_COLS.map((c) => (
-          <div
-          key={c.key}
-          style={{
-            ...S.hdrCell,
-            textAlign: c.align,
-            display: 'flex',
-            justifyContent:
-              c.align === 'center'
-                ? 'center'
-                : c.align === 'right'
-                ? 'flex-end'
-                : 'flex-start',
-          }}
-        >
-          {c.label}
-        </div>
+          <div key={c.key} style={{ ...S.hdrCell, textAlign: c.align }}>
+            {c.label}
+          </div>
         ))}
       </div>
 
       {goalies.map((g) => {
-        const gs = playerStats[g.id] ?? {};
-
-        const gag = gs.ga ?? 0;
-        const shots = gs.shots ?? 0;
-        const sv = Math.max(0, shots - gag);
-
-        const svp = shots > 0
-          ? `${Math.round((sv / shots) * 100)}%`
+        const isActive = g.id === activeGoalie?.id;
+        const sv  = isActive ? saves : 0;
+        const gag = isActive ? ga    : 0;
+        const svp = isActive
+          ? (typeof svPct === 'function' ? svPct() : svPct)
           : '–';
-
         return (
           <div key={g.id} style={{ ...S.row, gridTemplateColumns: gTemplate }}>
             <div style={S.pNum}>{g.num}</div>
             <div style={S.pName}>
               {g.name}
-              { /* This shows the In next to active goalie, removing */ } 
-             { /*  {isActive && <span style={S.inTag}>IN</span>} */ }
+              {isActive && <span style={S.inTag}>IN</span>}
             </div>
-              <div style={{ ...S.val, textAlign:'center' }}>{shots}</div>
-              <div style={{ ...S.val, textAlign:'center' }}>{sv}</div>
-              <div style={{ ...S.val, textAlign:'center' }}>{gag}</div>
-              <div style={{ ...S.val, textAlign:'center', color:'var(--tp)', fontWeight:800 }}>
-                {svp}
-              </div>
+            <div style={S.val}>{sv}</div>
+            <div style={S.val}>{gag}</div>
+            <div style={{ ...S.val, color: 'var(--tp)', fontWeight: 800 }}>{svp}</div>
           </div>
         );
       })}

@@ -10,13 +10,10 @@ export default function PlayerModal({
 }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [phase, setPhase] = useState('pick'); // 'pick' | 'assist'
-  // Keep scorer stored separately so it survives the phase switch
-  const [scorer, setScorer] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedPlayer(null);
-      setScorer(null);
       setPhase('pick');
     }
   }, [isOpen, pendingStat]);
@@ -28,7 +25,7 @@ export default function PlayerModal({
 
   const title =
     phase === 'assist'
-      ? `Goal by #${scorer?.num} ${scorer?.name} — who assisted?`
+      ? 'Who assisted?'
       : selectedPlayer && isGoal
       ? `#${selectedPlayer.num} ${selectedPlayer.name} scored`
       : STAT_PROMPTS[pendingStat] ?? 'Select player';
@@ -37,34 +34,30 @@ export default function PlayerModal({
 
   const handlePlayerTap = (player) => {
     if (phase === 'assist') {
-      // scorer is stored in `scorer` state, assister is `player`
-      onRecord('goal', scorer, null, player);
-      onClose();
-      return;
-    }
-
-    if (isGoal) {
+      // Picking the assister — record assist then close
+      onRecord('assist', player);
+      onClose();                  // ← was missing before
+    } else if (isGoal) {
+      // Highlight scorer, show assist prompt — don't record yet
       setSelectedPlayer(player);
-      return;
+    } else {
+      // All other stats — record and close immediately
+      onRecord(pendingStat, player);
+      onClose();
     }
-
-    // All other stats — record and close
-    onRecord(pendingStat, player, null, null);
-    onClose();
   };
 
   const handleAssist = (yes) => {
-    if (!yes) {
-      // No assist — record goal with just the scorer, no assister
-      onRecord('goal', selectedPlayer, null, null);
-      onClose();
-      return;
+    // Record the goal now that we have the scorer confirmed
+    onRecord('goal', selectedPlayer);
+    if (yes) {
+      // Switch modal to assist picker
+      setPhase('assist');
+      setSelectedPlayer(null);
+    } else {
+      // No assist — we're done, close
+      onClose();                  // ← was missing before
     }
-
-    // Yes assist — store scorer, switch to assist picker
-    setScorer(selectedPlayer);
-    setSelectedPlayer(null);
-    setPhase('assist');
   };
 
   return (
@@ -84,28 +77,25 @@ export default function PlayerModal({
       </div>
 
       <div style={styles.grid}>
-        {fieldPlayers
-          // In assist phase, hide the scorer so they can't assist themselves
-          .filter(p => phase !== 'assist' || p.id !== scorer?.id)
-          .map((p) => {
-            const isSelected = selectedPlayer?.id === p.id;
-            const isFogo     = isFO && p.pos === 'FOGO';
-            return (
-              <button
-                key={p.id}
-                onClick={() => handlePlayerTap(p)}
-                style={{
-                  ...styles.card,
-                  background:  isSelected ? 'var(--tp)'  : 'var(--surf)',
-                  borderColor: isSelected ? 'var(--tp)'  : isFogo ? 'var(--ta)' : 'var(--bdr)',
-                }}
-              >
-                <div style={{ ...styles.cardNum,  color: isSelected ? 'var(--tpt)' : 'var(--txt)'  }}>#{p.num}</div>
-                <div style={{ ...styles.cardName, color: isSelected ? 'var(--tpt)' : 'var(--txt2)' }}>{p.name}</div>
-                <div style={{ ...styles.cardPos,  color: isSelected ? 'var(--tpt)' : p.pos === 'FOGO' ? 'var(--ta)' : 'var(--txt2)' }}>{p.pos}</div>
-              </button>
-            );
-          })}
+        {fieldPlayers.map((p) => {
+          const isSelected = selectedPlayer?.id === p.id;
+          const isFogo     = isFO && p.pos === 'FOGO';
+          return (
+            <button
+              key={p.id}
+              onClick={() => handlePlayerTap(p)}
+              style={{
+                ...styles.card,
+                background:  isSelected ? 'var(--tp)'  : 'var(--surf)',
+                borderColor: isSelected ? 'var(--tp)'  : isFogo ? 'var(--ta)' : 'var(--bdr)',
+              }}
+            >
+              <div style={{ ...styles.cardNum,  color: isSelected ? 'var(--tpt)' : 'var(--txt)'  }}>#{p.num}</div>
+              <div style={{ ...styles.cardName, color: isSelected ? 'var(--tpt)' : 'var(--txt2)' }}>{p.name}</div>
+              <div style={{ ...styles.cardPos,  color: isSelected ? 'var(--tpt)' : p.pos === 'FOGO' ? 'var(--ta)' : 'var(--txt2)' }}>{p.pos}</div>
+            </button>
+          );
+        })}
       </div>
 
       {showAssistFooter && (
