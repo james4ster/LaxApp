@@ -367,6 +367,52 @@ export function usePlayers(teamId) {
   return { players, loading, error, addPlayer, updatePlayer, removePlayer, bulkAddPlayers, reload: loadPlayers };
 }
 
+// ── useOpponents — per-team autocomplete/add list for the schedule form ────
+export function useOpponents(teamId) {
+  const [opponents, setOpponents] = useState([]);
+  const [loading,   setLoading]   = useState(false);
+
+  const load = useCallback(async () => {
+    if (!teamId) return;
+    setLoading(true);
+    const { data, error: err } = await supabase
+      .from('opponents')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('name', { ascending: true });
+    setLoading(false);
+    if (!err) setOpponents(data ?? []);
+  }, [teamId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Case-insensitive: reuses an existing entry rather than creating a
+  // near-duplicate ("North Allegheny" vs "north allegheny").
+  const addOpponent = useCallback(async (name) => {
+    const trimmed = name.trim();
+    if (!teamId || !trimmed) return null;
+
+    const existing = opponents.find(
+      o => o.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existing) return existing;
+
+    const { data, error: err } = await supabase
+      .from('opponents')
+      .insert({ team_id: teamId, name: trimmed })
+      .select()
+      .single();
+    if (err) throw err;
+
+    setOpponents(prev =>
+      [...prev, data].sort((a, b) => a.name.localeCompare(b.name))
+    );
+    return data;
+  }, [teamId, opponents]);
+
+  return { opponents, loading, addOpponent, reload: load };
+}
+
 // ── useSchedule — games for a specific team ───────────────────────────────
 export function useSchedule(teamId) {
   const [games,   setGames]   = useState([]);

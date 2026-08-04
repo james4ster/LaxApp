@@ -15,29 +15,28 @@ function completeness(team, players, games) {
   };
 }
 
-function StepCard({ icon, title, sub, done, optional, active, onClick, children }) {
+function NavItem({ icon, title, sub, done, active, onClick }) {
   return (
-    <div style={{
-      ...S.card,
-      borderColor: done ? 'var(--tp)' : active ? 'var(--bdr)' : 'var(--bdr)',
-      background:  done ? 'rgba(26,107,58,.05)' : 'var(--surf)',
-    }}>
-      <button style={S.cardHead} onClick={onClick}>
-        <div style={{
-          ...S.stepIcon,
-          background: done ? 'var(--tp)' : 'var(--surf2)',
-          color:       done ? '#fff' : 'var(--txt2)',
-        }}>
-          {done ? '✓' : icon}
-        </div>
-        <div style={S.stepText}>
-          <div style={{ ...S.stepTitle, color: done ? 'var(--tp)' : 'var(--txt)' }}>{title}</div>
-          <div style={S.stepSub}>{sub}</div>
-        </div>
-        <div style={{ ...S.chevron, transform: active ? 'rotate(90deg)' : 'none' }}>›</div>
-      </button>
-      {active && <div style={S.cardBody}>{children}</div>}
-    </div>
+    <button
+      onClick={onClick}
+      style={{
+        ...S.navItem,
+        background: active ? 'rgba(26,107,58,.08)' : 'transparent',
+        borderColor: active ? 'var(--tp)' : 'transparent',
+      }}
+    >
+      <div style={{
+        ...S.navIcon,
+        background: done ? 'var(--tp)' : 'var(--surf2)',
+        color:      done ? '#fff' : 'var(--txt2)',
+      }}>
+        {done ? '✓' : icon}
+      </div>
+      <div style={S.navText}>
+        <div style={{ ...S.navTitle, color: active ? 'var(--tp)' : 'var(--txt)' }}>{title}</div>
+        <div style={S.navSub}>{sub}</div>
+      </div>
+    </button>
   );
 }
 
@@ -55,15 +54,14 @@ export default function Dashboard() {
   const { teams, loading, createTeam, updateTeam, uploadLogo, reload } = useTeams();
 
   const [selectedTeamId, setSelectedTeamId] = useState(null);
-  const [openStep, setOpenStep]             = useState(null);
+  const [activeStep, setActiveStep]         = useState('team');
 
   // Use first team if none selected
   const team = teams.find(t => t.id === selectedTeamId) ?? teams[0] ?? null;
 
-  // ── Roster and schedule now live here (single source of truth), and are
-  // passed down as props instead of RosterSetup/ScheduleSetup each calling
-  // their own separate hook instance — that was the cause of the roster
-  // checkmark/count never updating after adding players. ──────────────────
+  // ── Roster and schedule live here (single source of truth), passed down
+  // as props instead of RosterSetup/ScheduleSetup each calling their own
+  // hook instance.
   const {
     players = [],
     loading: playersLoading,
@@ -81,8 +79,6 @@ export default function Dashboard() {
   } = useSchedule(team?.id);
 
   // ── Team-edit form state, kept in sync with whichever team is selected ──
-  // (This replaces the old direct destructure of teamData/updateField/saveTeam/
-  // etc. from a second hook that was never actually being called.)
   const [formFields, setFormFields] = useState(BLANK_FORM);
   const [saving,     setSaving]     = useState(false);
   const [saved,      setSaved]      = useState(false);
@@ -103,8 +99,6 @@ export default function Dashboard() {
   const updateField = (field, value) =>
     setFormFields(prev => ({ ...prev, [field]: value }));
 
-  const toggleStep = (step) => setOpenStep(s => s === step ? null : step);
-
   // Handles both creating a brand-new team and updating the selected one.
   const saveTeam = async () => {
     setSaving(true);
@@ -116,7 +110,7 @@ export default function Dashboard() {
       } else {
         result = await createTeam(formFields);
         setSelectedTeamId(result.id);
-        setOpenStep('logo');
+        setActiveStep('logo');
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -149,8 +143,22 @@ export default function Dashboard() {
   if (loading) return <div style={S.loading}>Loading…</div>;
 
   const done = completeness(team, players, games);
-
   const readyToTrack = done.team && done.roster;
+
+  const NAV_STEPS = [
+    { key: 'team', icon: '🏑', title: team ? team.name : 'Create your team',
+      sub: team ? `${team.gender === 'boys' ? 'Boys' : 'Girls'} · ${team.season_year ?? 'No season set'}` : 'Name, gender, season year',
+      done: done.team, visible: true },
+    { key: 'logo', icon: '🖼', title: 'Team logo',
+      sub: team?.logo_url ? 'Logo uploaded ✓' : 'Optional — no logo added',
+      done: !!team?.logo_url, visible: !!team },
+    { key: 'roster', icon: '👥', title: 'Roster',
+      sub: players.length > 0 ? `${players.length} players loaded` : 'Import or add your roster',
+      done: done.roster, visible: !!team },
+    { key: 'schedule', icon: '📅', title: 'Schedule',
+      sub: games.length > 0 ? `${games.length} games added` : 'Add upcoming games (optional)',
+      done: done.schedule, visible: !!team },
+  ];
 
   return (
     <div style={S.page}>
@@ -186,117 +194,13 @@ export default function Dashboard() {
               {t.name}
             </button>
           ))}
-          <button style={S.addTeamBtn} onClick={() => { setSelectedTeamId(null); setOpenStep('team'); }}>
+          <button style={S.addTeamBtn} onClick={() => { setSelectedTeamId(null); setActiveStep('team'); }}>
             + New team
           </button>
         </div>
       )}
 
-      {/* Setup steps */}
-      <div style={S.steps}>
-
-        {/* Step 1 — Team */}
-        <StepCard
-          icon="🏑"
-          title={team ? team.name : 'Create your team'}
-          sub={team
-            ? `${team.gender === 'boys' ? '♂ Boys' : '♀ Girls'} · ${team.season_year ?? 'No season set'}`
-            : 'Name, gender, season year'}
-          done={done.team}
-          active={openStep === 'team'}
-          onClick={() => toggleStep('team')}
-        >
-          <TeamSetup
-            team={formFields}
-            onFieldChange={updateField}
-            onCreate={saveTeam}
-            onUpdate={saveTeam}
-            saving={saving}
-            saved={saved}
-            error={formError}
-            teamId={team?.id ?? null}
-          />
-        </StepCard>
-
-        {/* Step 2 — Logo */}
-        {team && (
-          <StepCard
-            icon="🖼"
-            title="Team logo"
-            sub={
-              team?.logo_url
-                ? 'Logo uploaded ✓'
-                : 'Optional — no logo added'
-            }
-            done={!!team?.logo_url}
-            active={openStep === 'logo'}
-            onClick={() => toggleStep('logo')}
-          >
-            <LogoUploader
-              team={team}
-              onUpload={handleLogoUpload}
-              onDone={async () => {
-                await reload();
-              }}
-            />
-
-          </StepCard>
-        )}
-
-        {/* Step 3 — Roster */}
-        {team && (
-          <StepCard
-            icon="👥"
-            title="Roster"
-            sub={
-              players.length > 0
-                ? `${players.length} players loaded`
-                : 'Import or add your roster'
-            }
-            done={done.roster}
-            active={openStep === 'roster'}
-            onClick={() => toggleStep('roster')}
-          >
-            <RosterSetup
-              players={players}
-              loading={playersLoading}
-              addPlayer={addPlayer}
-              updatePlayer={updatePlayer}
-              removePlayer={removePlayer}
-              bulkAddPlayers={bulkAddPlayers}
-              onReady={() => setOpenStep('schedule')}
-            />
-          </StepCard>
-        )}
-
-        {/* Step 4 — Schedule */}
-        {team && (
-          <StepCard
-            icon="📅"
-            title="Schedule"
-            sub={
-              games.length > 0
-                ? `${games.length} games added`
-                : 'Add upcoming games (optional)'
-            }
-            done={done.schedule}
-            active={openStep === 'schedule'}
-            onClick={() => toggleStep('schedule')}
-          >
-            <ScheduleSetup
-              teamId={team.id}
-              seasonYear={team.season_year}
-              games={games}
-              loading={gamesLoading}
-              addGame={addGame}
-              removeGame={removeGame}
-            />
-          </StepCard>
-        )}
-
-      </div>
-
-      {/* Ready to track CTA */}
+      {/* Ready to track banner */}
       {readyToTrack && (
         <div style={S.cta}>
           <div style={S.ctaText}>
@@ -307,17 +211,86 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Empty state — no teams yet */}
-      {!team && !loading && (
-        <div style={S.empty}>
-          <div style={{ fontSize: 48 }}>🥍</div>
-          <div style={S.emptyTitle}>Welcome to LaxTrack</div>
-          <div style={S.emptySub}>Set up your team to get started tracking stats live.</div>
-          <button style={S.createBtn} onClick={() => setOpenStep('team')}>
-            Create your first team
-          </button>
+      {/* App shell: sidebar + content, no page-level scroll */}
+      <div style={S.shell}>
+
+        <div style={S.sidebar}>
+          {NAV_STEPS.filter(s => s.visible).map(s => (
+            <NavItem
+              key={s.key}
+              icon={s.icon}
+              title={s.title}
+              sub={s.sub}
+              done={s.done}
+              active={activeStep === s.key}
+              onClick={() => setActiveStep(s.key)}
+            />
+          ))}
         </div>
-      )}
+
+        <div style={S.content}>
+          <div style={S.contentInner}>
+
+            {activeStep === 'team' && (
+              <>
+                <div style={S.contentTitle}>{team ? 'Team Details' : 'Create your team'}</div>
+                <TeamSetup
+                  team={formFields}
+                  onFieldChange={updateField}
+                  onCreate={saveTeam}
+                  onUpdate={saveTeam}
+                  saving={saving}
+                  saved={saved}
+                  error={formError}
+                  teamId={team?.id ?? null}
+                />
+              </>
+            )}
+
+            {activeStep === 'logo' && team && (
+              <>
+                <div style={S.contentTitle}>Team Logo</div>
+                <LogoUploader
+                  team={team}
+                  onUpload={handleLogoUpload}
+                  onDone={async () => { await reload(); }}
+                />
+              </>
+            )}
+
+            {activeStep === 'roster' && team && (
+              <>
+                <div style={S.contentTitle}>Roster</div>
+                <RosterSetup
+                  players={players}
+                  loading={playersLoading}
+                  addPlayer={addPlayer}
+                  updatePlayer={updatePlayer}
+                  removePlayer={removePlayer}
+                  bulkAddPlayers={bulkAddPlayers}
+                  onReady={() => setActiveStep('schedule')}
+                />
+              </>
+            )}
+
+            {activeStep === 'schedule' && team && (
+              <>
+                <div style={S.contentTitle}>Schedule</div>
+                <ScheduleSetup
+                  teamId={team.id}
+                  seasonYear={team.season_year}
+                  games={games}
+                  loading={gamesLoading}
+                  addGame={addGame}
+                  removeGame={removeGame}
+                />
+              </>
+            )}
+
+          </div>
+        </div>
+
+      </div>
 
     </div>
   );
@@ -377,13 +350,11 @@ function LogoUploader({ team, onUpload, onDone }) {
 const S = {
   page: {
     width: '100%',
-    maxWidth: '680px',
-    margin: '0 auto',
-    minHeight: '100dvh',
+    height: '100dvh',
     background: 'var(--bg)',
-    padding: '0 20px 40px',
     display: 'flex',
     flexDirection: 'column',
+    overflow: 'hidden',
   },
   loading: {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -391,8 +362,9 @@ const S = {
   },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 14px 12px',
+    padding: '16px 24px 12px',
     background: 'var(--ts)',
+    flexShrink: 0,
   },
   appName: { fontSize: 18, fontWeight: 800, color: 'var(--ta)', letterSpacing: .5 },
   welcome: { fontSize: 12, color: 'rgba(255,255,255,.5)', marginTop: 2 },
@@ -402,9 +374,10 @@ const S = {
     borderRadius: 7, padding: '5px 10px', cursor: 'pointer',
   },
   teamSwitcher: {
-    display: 'flex', gap: 6, padding: '10px 12px',
+    display: 'flex', gap: 6, padding: '10px 20px',
     overflowX: 'auto', WebkitOverflowScrolling: 'touch',
     background: 'var(--surf)', borderBottom: '1px solid var(--bdr)',
+    flexShrink: 0,
   },
   teamChip: {
     display: 'flex', alignItems: 'center', gap: 5,
@@ -416,58 +389,71 @@ const S = {
     border: '1px dashed var(--bdr)', background: 'none',
     color: 'var(--txt2)', fontSize: 12, cursor: 'pointer', flexShrink: 0,
   },
-  steps: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    padding: '20px 0',
-  },
-  card: {
-    background: 'var(--surf)', borderRadius: 12,
-    border: '1px solid', overflow: 'hidden',
-  },
-  cardHead: {
-    display: 'flex', alignItems: 'center', gap: 10,
-    padding: '12px 12px', width: '100%',
-    background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-  },
-  cardBody: { padding: '0 12px 14px', borderTop: '1px solid var(--bdr)' },
-  stepIcon: {
-    width: 36, height: 36, borderRadius: 10,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 16, fontWeight: 700, flexShrink: 0,
-    transition: 'background .15s',
-  },
-  stepText: { flex: 1, minWidth: 0 },
-  stepTitle: { fontSize: 14, fontWeight: 700, lineHeight: 1.3 },
-  stepSub:   { fontSize: 11, color: 'var(--txt2)', marginTop: 2 },
-  chevron:   { fontSize: 18, color: 'var(--txt2)', transition: 'transform .15s', flexShrink: 0 },
+
   cta: {
-    margin: '4px 10px',
+    margin: '10px 20px 0',
     background: 'var(--tp)', borderRadius: 12,
-    padding: '14px 14px',
+    padding: '12px 16px',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+    flexShrink: 0,
   },
   ctaText:  {},
-  ctaTitle: { fontSize: 15, fontWeight: 800, color: 'var(--tpt)' },
+  ctaTitle: { fontSize: 14, fontWeight: 800, color: 'var(--tpt)' },
   ctaSub:   { fontSize: 11, color: 'rgba(255,255,255,.65)', marginTop: 2 },
   ctaBtn: {
     background: 'var(--ta)', color: 'var(--tat)',
-    borderRadius: 9, padding: '9px 14px',
+    borderRadius: 9, padding: '8px 14px',
     fontSize: 12, fontWeight: 800, textDecoration: 'none', flexShrink: 0,
   },
-  empty: {
-    flex: 1, display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center',
-    padding: '40px 24px', gap: 10,
+
+  // ── App shell ──
+  shell: {
+    flex: 1,
+    display: 'flex',
+    minHeight: 0, // lets children actually scroll instead of growing the page
+    padding: '16px 20px 20px',
+    gap: 16,
   },
-  emptyTitle: { fontSize: 20, fontWeight: 800, color: 'var(--txt)' },
-  emptySub:   { fontSize: 13, color: 'var(--txt2)', textAlign: 'center', lineHeight: 1.5 },
-  createBtn: {
-    marginTop: 8, background: 'var(--tp)', color: 'var(--tpt)',
-    border: 'none', borderRadius: 10, padding: '12px 24px',
-    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+  sidebar: {
+    width: 260,
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    overflowY: 'auto',
   },
+  navItem: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '10px 10px', borderRadius: 10,
+    border: '1px solid', background: 'none',
+    cursor: 'pointer', textAlign: 'left', width: '100%',
+  },
+  navIcon: {
+    width: 32, height: 32, borderRadius: 9,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 14, fontWeight: 700, flexShrink: 0,
+  },
+  navText: { flex: 1, minWidth: 0 },
+  navTitle: { fontSize: 13, fontWeight: 700, lineHeight: 1.3 },
+  navSub:   { fontSize: 11, color: 'var(--txt2)', marginTop: 1 },
+
+  content: {
+    flex: 1,
+    minWidth: 0,
+    background: 'var(--surf)',
+    borderRadius: 14,
+    border: '1px solid var(--bdr)',
+    overflowY: 'auto',
+  },
+  contentInner: {
+    padding: '20px 24px 28px',
+    maxWidth: 720,
+  },
+  contentTitle: {
+    fontSize: 16, fontWeight: 800, color: 'var(--txt)',
+    marginBottom: 14,
+  },
+
   uploadLabel: {
     background: 'var(--tp)', color: 'var(--tpt)',
     borderRadius: 8, padding: '9px 18px',

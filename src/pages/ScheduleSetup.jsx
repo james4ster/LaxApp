@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+
+import { useOpponents } from '../hooks/useTeam';
 
 function fmt(dt) {
   if (!dt) return '–';
@@ -6,6 +8,64 @@ function fmt(dt) {
     weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
   });
+}
+
+// ── Opponent combobox: type to filter, click a match to select it, or
+// "+ Add" if nothing matches. The actual "remember this opponent" write
+// happens in handleAdd below (so it works even if someone types a full
+// name and hits Add game without ever opening the dropdown) — this
+// component is just the picking UI.
+function OpponentCombo({ value, onChange, opponents }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const query = value.trim().toLowerCase();
+  const matches = query
+    ? opponents.filter(o => o.name.toLowerCase().includes(query))
+    : opponents;
+  const exactMatch = opponents.some(o => o.name.toLowerCase() === query);
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <input
+        style={SC.input}
+        placeholder="e.g. Riverside HS"
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        autoComplete="off"
+      />
+      {open && (matches.length > 0 || (query && !exactMatch)) && (
+        <div style={SC.comboList}>
+          {matches.map(o => (
+            <div
+              key={o.id}
+              style={SC.comboItem}
+              onMouseDown={() => { onChange(o.name); setOpen(false); }}
+            >
+              {o.name}
+            </div>
+          ))}
+          {query && !exactMatch && (
+            <div
+              style={{ ...SC.comboItem, color: 'var(--tp)', fontWeight: 700 }}
+              onMouseDown={() => { onChange(value.trim()); setOpen(false); }}
+            >
+              + Add "{value.trim()}"
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -17,6 +77,8 @@ function fmt(dt) {
  * Dashboard used for the schedule checkmark/count.
  */
 export default function ScheduleSetup({ teamId, seasonYear, games, loading, addGame, removeGame }) {
+  const { opponents, addOpponent } = useOpponents(teamId);
+
   const [opponent,     setOpponent]     = useState('');
   const [scheduledAt,  setScheduledAt]  = useState('');
   const [location,     setLocation]     = useState('');
@@ -29,6 +91,10 @@ export default function ScheduleSetup({ teamId, seasonYear, games, loading, addG
     if (!opponent.trim()) { setErr('Opponent name required'); return; }
     setBusy(true); setErr(null);
     try {
+      // Remembers this opponent for next time, whether it was picked from
+      // the dropdown or just typed fresh — addOpponent no-ops if it's
+      // already a known name (case-insensitive).
+      await addOpponent(opponent.trim());
       await addGame({
         opponent:      opponent.trim(),
         scheduled_at:  scheduledAt || null,
@@ -88,12 +154,7 @@ export default function ScheduleSetup({ teamId, seasonYear, games, loading, addG
 
         <div style={SC.field}>
           <label style={SC.lbl}>Opponent</label>
-          <input
-            style={SC.input}
-            placeholder="e.g. Riverside HS"
-            value={opponent}
-            onChange={e => setOpponent(e.target.value)}
-          />
+          <OpponentCombo value={opponent} onChange={setOpponent} opponents={opponents} />
         </div>
 
         <div style={SC.twoCol}>
@@ -181,6 +242,16 @@ const SC = {
   input: {
     padding: '8px 9px', borderRadius: 7, border: '1px solid var(--bdr)',
     background: 'var(--surf)', color: 'var(--txt)', fontSize: 13, outline: 'none',
+    width: '100%',
+  },
+  comboList: {
+    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+    background: 'var(--surf)', border: '1px solid var(--bdr)', borderRadius: 8,
+    boxShadow: '0 4px 12px rgba(0,0,0,.08)', zIndex: 10,
+    maxHeight: 180, overflowY: 'auto',
+  },
+  comboItem: {
+    padding: '8px 10px', fontSize: 13, color: 'var(--txt)', cursor: 'pointer',
   },
   twoCol: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
   segRow: { display: 'flex', gap: 5 },
