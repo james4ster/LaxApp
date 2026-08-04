@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthProvider';
-import { useTeams } from '../hooks/useTeam';
+import { useTeams, usePlayers, useSchedule } from '../hooks/useTeam';
 import TeamSetup from '../pages/TeamSetup';
 import RosterSetup from './RosterSetup';
 import ScheduleSetup from './ScheduleSetup';
-import { usePlayers } from '../hooks/useTeam';
 
 
 function completeness(team, players, games) {
@@ -58,11 +57,28 @@ export default function Dashboard() {
   const [selectedTeamId, setSelectedTeamId] = useState(null);
   const [openStep, setOpenStep]             = useState(null);
 
-  const [gameCount, setGameCount] = useState(0);
-
   // Use first team if none selected
   const team = teams.find(t => t.id === selectedTeamId) ?? teams[0] ?? null;
-  const { players = [] } = usePlayers(team?.id);
+
+  // ── Roster and schedule now live here (single source of truth), and are
+  // passed down as props instead of RosterSetup/ScheduleSetup each calling
+  // their own separate hook instance — that was the cause of the roster
+  // checkmark/count never updating after adding players. ──────────────────
+  const {
+    players = [],
+    loading: playersLoading,
+    addPlayer,
+    updatePlayer,
+    removePlayer,
+    bulkAddPlayers,
+  } = usePlayers(team?.id);
+
+  const {
+    games = [],
+    loading: gamesLoading,
+    addGame,
+    removeGame,
+  } = useSchedule(team?.id);
 
   // ── Team-edit form state, kept in sync with whichever team is selected ──
   // (This replaces the old direct destructure of teamData/updateField/saveTeam/
@@ -132,12 +148,7 @@ export default function Dashboard() {
 
   if (loading) return <div style={S.loading}>Loading…</div>;
 
-  // NOTE: gameCount is never actually updated from ScheduleSetup below, so
-  // done.schedule will always read false until ScheduleSetup is wired to
-  // report its game count back up (e.g. an onGamesChange callback, similar
-  // to RosterSetup's onReady). Flagging rather than guessing at that file's
-  // internals since it wasn't provided.
-  const done = completeness(team, players, Array(gameCount).fill({}));
+  const done = completeness(team, players, games);
 
   const readyToTrack = done.team && done.roster;
 
@@ -197,14 +208,11 @@ export default function Dashboard() {
         >
           <TeamSetup
             team={formFields}
-            logoPreview={team?.logo_url ?? null}
-            onLogoUpload={handleLogoUpload}
             onFieldChange={updateField}
             onCreate={saveTeam}
             onUpdate={saveTeam}
             saving={saving}
             saved={saved}
-            uploading={logoUploading}
             error={formError}
             teamId={team?.id ?? null}
           />
@@ -220,6 +228,7 @@ export default function Dashboard() {
                 ? 'Logo uploaded ✓'
                 : 'Optional — no logo added'
             }
+            done={!!team?.logo_url}
             active={openStep === 'logo'}
             onClick={() => toggleStep('logo')}
           >
@@ -248,8 +257,13 @@ export default function Dashboard() {
             active={openStep === 'roster'}
             onClick={() => toggleStep('roster')}
           >
-            <RosterSetup 
-              teamId={team.id}
+            <RosterSetup
+              players={players}
+              loading={playersLoading}
+              addPlayer={addPlayer}
+              updatePlayer={updatePlayer}
+              removePlayer={removePlayer}
+              bulkAddPlayers={bulkAddPlayers}
               onReady={() => setOpenStep('schedule')}
             />
           </StepCard>
@@ -261,8 +275,8 @@ export default function Dashboard() {
             icon="📅"
             title="Schedule"
             sub={
-              gameCount > 0
-                ? `${gameCount} games added`
+              games.length > 0
+                ? `${games.length} games added`
                 : 'Add upcoming games (optional)'
             }
             done={done.schedule}
@@ -271,6 +285,11 @@ export default function Dashboard() {
           >
             <ScheduleSetup
               teamId={team.id}
+              seasonYear={team.season_year}
+              games={games}
+              loading={gamesLoading}
+              addGame={addGame}
+              removeGame={removeGame}
             />
           </StepCard>
         )}
@@ -358,11 +377,11 @@ function LogoUploader({ team, onUpload, onDone }) {
 const S = {
   page: {
     width: '100%',
-    maxWidth: '1200px',
+    maxWidth: '680px',
     margin: '0 auto',
     minHeight: '100dvh',
     background: 'var(--bg)',
-    padding: '0 24px 40px',
+    padding: '0 20px 40px',
     display: 'flex',
     flexDirection: 'column',
   },
@@ -398,9 +417,9 @@ const S = {
     color: 'var(--txt2)', fontSize: 12, cursor: 'pointer', flexShrink: 0,
   },
   steps: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: 16,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
     padding: '20px 0',
   },
   card: {

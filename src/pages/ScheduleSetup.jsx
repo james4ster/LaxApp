@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useSchedule } from '../hooks/useTeam';
 
 function fmt(dt) {
   if (!dt) return '–';
@@ -9,13 +8,20 @@ function fmt(dt) {
   });
 }
 
-export default function ScheduleSetup({ teamId }) {
-  const { games, loading, addGame, removeGame } = useSchedule(teamId);
-
+/**
+ * ScheduleSetup
+ *
+ * games/loading/addGame/removeGame now come from Dashboard's single
+ * useSchedule instance as props (same fix as RosterSetup) — this used
+ * to call its own useSchedule(teamId), disconnected from the copy
+ * Dashboard used for the schedule checkmark/count.
+ */
+export default function ScheduleSetup({ teamId, seasonYear, games, loading, addGame, removeGame }) {
   const [opponent,     setOpponent]     = useState('');
   const [scheduledAt,  setScheduledAt]  = useState('');
   const [location,     setLocation]     = useState('');
   const [isHome,       setIsHome]       = useState(true);
+  const [isExhibition, setIsExhibition] = useState(false);
   const [busy,         setBusy]         = useState(false);
   const [err,          setErr]          = useState(null);
 
@@ -24,12 +30,14 @@ export default function ScheduleSetup({ teamId }) {
     setBusy(true); setErr(null);
     try {
       await addGame({
-        opponent:     opponent.trim(),
-        scheduled_at: scheduledAt || null,
-        location:     location.trim() || null,
-        is_home:      isHome,
+        opponent:      opponent.trim(),
+        scheduled_at:  scheduledAt || null,
+        location:      location.trim() || null,
+        is_home:       isHome,
+        season_year:   seasonYear ?? null,
+        is_exhibition: isExhibition,
       });
-      setOpponent(''); setScheduledAt(''); setLocation('');
+      setOpponent(''); setScheduledAt(''); setLocation(''); setIsExhibition(false);
     } catch (e) { setErr(e.message); }
     setBusy(false);
   };
@@ -46,9 +54,12 @@ export default function ScheduleSetup({ teamId }) {
             <div key={g.id} style={SC.gameRow}>
               <div style={SC.gameInfo}>
                 <div style={SC.gameName}>
-                  {g.home_team_id === teamId ? 'vs' : '@'} {g.location ?? 'Opponent'}
+                  {g.home_team_id === teamId ? 'vs' : '@'} {g.opponent_name ?? 'Opponent'}
+                  {g.is_exhibition && <span style={SC.exhibitionTag}>Exhibition</span>}
                 </div>
-                <div style={SC.gameMeta}>{fmt(g.scheduled_at)}</div>
+                <div style={SC.gameMeta}>
+                  {fmt(g.scheduled_at)}{g.location ? ` · ${g.location}` : ''}
+                </div>
               </div>
               <div style={{
                 ...SC.statusBadge,
@@ -125,6 +136,15 @@ export default function ScheduleSetup({ teamId }) {
           />
         </div>
 
+        <label style={SC.checkboxRow}>
+          <input
+            type="checkbox"
+            checked={isExhibition}
+            onChange={e => setIsExhibition(e.target.checked)}
+          />
+          Exhibition / scrimmage (won't count toward record)
+        </label>
+
         {err && <div style={{ fontSize: 11, color: 'var(--danger)' }}>{err}</div>}
 
         <button
@@ -146,8 +166,12 @@ const SC = {
     borderBottom: '1px solid var(--bdr)', background: 'var(--surf)',
   },
   gameInfo:   { flex: 1, minWidth: 0 },
-  gameName:   { fontSize: 13, fontWeight: 600, color: 'var(--txt)' },
+  gameName:   { fontSize: 13, fontWeight: 600, color: 'var(--txt)', display: 'flex', alignItems: 'center', gap: 6 },
   gameMeta:   { fontSize: 11, color: 'var(--txt2)', marginTop: 1 },
+  exhibitionTag: {
+    fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px',
+    color: 'var(--txt2)', background: 'var(--surf2)', borderRadius: 5, padding: '2px 6px',
+  },
   statusBadge:{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5 },
   removeBtn:  { background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 12, padding: '2px 4px' },
   form:       { background: 'var(--surf2)', borderRadius: 9, padding: '10px 10px 12px', display: 'flex', flexDirection: 'column', gap: 10 },
@@ -163,6 +187,10 @@ const SC = {
   seg: {
     flex: 1, padding: '8px 0', borderRadius: 7, border: 'none',
     fontSize: 12, fontWeight: 700, cursor: 'pointer',
+  },
+  checkboxRow: {
+    display: 'flex', alignItems: 'center', gap: 7,
+    fontSize: 12, color: 'var(--txt2)', cursor: 'pointer',
   },
   addBtn: {
     background: 'var(--tp)', color: 'var(--tpt)', border: 'none',

@@ -54,7 +54,7 @@ export function useTeamSetup() {
     const { data, error: loadErr } = await supabase
       .from('teams')
       .select('*')
-      .eq('created_by', user.id)
+      .eq('coach_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -149,7 +149,7 @@ export function useTeamSetup() {
       accent_color:    data.accent_color,
       logo_url:        data.logo_url,       // ← now correctly populated
       organization_id: data.organization_id,
-      created_by:      user.id,
+      coach_id:        user.id,
       updated_at:      new Date().toISOString(),
     };
 
@@ -227,7 +227,7 @@ export function useTeams() {
     const { data, error: err } = await supabase
       .from('teams')
       .select('*')
-      .eq('created_by', user.id)
+      .eq('coach_id', user.id)
       .order('created_at', { ascending: false });
     setLoading(false);
     if (err) { setError(err.message); return; }
@@ -240,7 +240,7 @@ export function useTeams() {
     if (!user) throw new Error('Not signed in');
     const { data, error: err } = await supabase
       .from('teams')
-      .insert({ ...fields, created_by: user.id, created_at: new Date().toISOString() })
+      .insert({ ...fields, coach_id: user.id, created_at: new Date().toISOString() })
       .select()
       .single();
     if (err) throw err;
@@ -301,6 +301,7 @@ export function usePlayers(teamId) {
       .from('players')
       .select('*')
       .eq('team_id', teamId)
+      .eq('active', true)
       .order('jersey_number', { ascending: true });
     setLoading(false);
     if (err) { setError(err.message); return; }
@@ -332,16 +333,38 @@ export function usePlayers(teamId) {
     return data;
   }, []);
 
+  // Soft delete: game_events references players with no ON DELETE cascade,
+  // so a hard delete on any player with logged stats would fail with a raw
+  // FK-violation error. Deactivate instead — historical stats/games stay
+  // intact and correctly attributed, the player just drops off the active
+  // roster view (loadPlayers above filters on active = true).
   const removePlayer = useCallback(async (id) => {
     const { error: err } = await supabase
       .from('players')
-      .delete()
+      .update({ active: false })
       .eq('id', id);
     if (err) { setError(err.message); return; }
     setPlayers(prev => prev.filter(p => p.id !== id));
   }, []);
 
-  return { players, loading, error, addPlayer, updatePlayer, removePlayer, reload: loadPlayers };
+  // ── Bulk insert (paste-from-spreadsheet / CSV import) ──────────────────
+  const bulkAddPlayers = useCallback(async (rows) => {
+    if (!teamId || !rows?.length) return [];
+    const payload = rows.map(r => ({ ...r, team_id: teamId }));
+    const { data, error: err } = await supabase
+      .from('players')
+      .insert(payload)
+      .select();
+    if (err) throw err;
+    setPlayers(prev =>
+      [...prev, ...(data ?? [])].sort(
+        (a, b) => (a.jersey_number ?? 999) - (b.jersey_number ?? 999)
+      )
+    );
+    return data ?? [];
+  }, [teamId]);
+
+  return { players, loading, error, addPlayer, updatePlayer, removePlayer, bulkAddPlayers, reload: loadPlayers };
 }
 
 // ── useSchedule — games for a specific team ───────────────────────────────
@@ -375,6 +398,8 @@ export function useSchedule(teamId) {
       opponent_name: fields.opponent,
       scheduled_at:  fields.scheduled_at || null,
       location:      fields.location     || null,
+      season_year:   fields.season_year  ?? null,
+      is_exhibition: !!fields.is_exhibition,
       status:        'scheduled',
     };
     const { data, error: err } = await supabase

@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { usePlayers } from '../hooks/useTeam';
-
 
 const POSITIONS = ['ATT', 'MID', 'DEF', 'FOGO', 'LSM', 'GK'];
 
@@ -60,7 +58,7 @@ function AddPlayerForm({ onAdd }) {
   const [pos,  setPos]  = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
-  
+
   const submit = async () => {
     if (!name.trim()) { setErr('Name required'); return; }
     setBusy(true); setErr(null);
@@ -104,7 +102,6 @@ function BulkPaste({ onBulkAdd }) {
       .filter(Boolean)
       .map(l => {
         const parts = l.split(/[\s,\t]+/);
-        // Try to detect which part is the number
         let num  = null;
         let name = [];
         let pos  = null;
@@ -175,17 +172,17 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
       .split(',')
       .map(h => h.trim().toLowerCase());
 
-      const hasHeader = headers.some(h =>
-        [
-          'name',
-          'player',
-          'full_name',
-          'number',
-          'jersey_number',
-          'jersey number',
-          'player name'
-        ].includes(h)
-      );
+    const hasHeader = headers.some(h =>
+      [
+        'name',
+        'player',
+        'full_name',
+        'number',
+        'jersey_number',
+        'jersey number',
+        'player name'
+      ].includes(h)
+    );
 
     const rows = hasHeader ? lines.slice(1) : lines;
 
@@ -208,7 +205,7 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
           'jersey',
           'jersey number'
         );
-        
+
         name = get(
           'name',
           'player',
@@ -234,35 +231,34 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
     .filter(p => p.full_name);
   };
 
-
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-  
+
     setBusy(true);
     setErr(null);
-  
+
     try {
       const text = await file.text();
       const players = parseCSV(text);
-  
+
       if (!players.length) {
         throw new Error('No players found in CSV');
       }
-  
+
       setPreview(players);
-  
+
     } catch (ex) {
       setErr(ex.message);
     }
-  
+
     setBusy(false);
   };
 
   const handleImport = async () => {
     setBusy(true);
     setErr(null);
-  
+
     try {
       await onBulkAdd(preview);
       setPreview([]);
@@ -270,11 +266,9 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
     } catch (e) {
       setErr(e.message);
     }
-  
+
     setBusy(false);
   };
-
-
 
   if (!open) {
     return (
@@ -285,7 +279,7 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
         >
           ⬇️ Download roster template
         </button>
-  
+
         <button
           style={R.bulkBtn}
           onClick={() => setOpen(true)}
@@ -296,19 +290,9 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
     );
   }
 
-
   return (
     <div style={R.bulkPanel}>
-  
-      {!open && (
-        <button
-          style={R.bulkBtn}
-          onClick={() => setOpen(true)}
-        >
-          📁 Upload roster CSV
-        </button>
-      )}
-  
+
       {open && !preview.length && (
       <>
         <div style={{
@@ -343,10 +327,10 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
         </button>
       </>
     )}
-  
+
       {preview.length > 0 && (
         <div style={R.previewBox}>
-  
+
           <div style={{
             fontWeight:700,
             fontSize:13,
@@ -354,14 +338,14 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
           }}>
             Found {preview.length} players
           </div>
-  
+
           {preview.slice(0,10).map((p,i)=>(
             <div key={i} style={R.previewRow}>
               #{p.jersey_number ?? '–'} {p.full_name}
               {p.position && ` · ${p.position}`}
             </div>
           ))}
-  
+
           {preview.length > 10 && (
             <div style={{
               fontSize:11,
@@ -371,7 +355,7 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
               + {preview.length - 10} more players
             </div>
           )}
-  
+
           <div style={{
             display:'flex',
             gap:8,
@@ -382,12 +366,12 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
               onClick={handleImport}
               disabled={busy}
             >
-              {busy 
-                ? 'Importing...' 
+              {busy
+                ? 'Importing...'
                 : `Import ${preview.length} Players`
               }
             </button>
-  
+
             <button
               style={R.cancelBtn}
               onClick={() => setPreview([])}
@@ -395,10 +379,10 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
               Cancel
             </button>
           </div>
-  
+
         </div>
       )}
-  
+
       {err &&
         <div style={{
           color:'var(--danger)',
@@ -407,14 +391,23 @@ function CSVUpload({ onBulkAdd, onDownloadTemplate }) {
           {err}
         </div>
       }
-  
+
     </div>
   );
 }
 
-export default function RosterSetup({ teamId, onReady }) {
-  const { players, loading, addPlayer, updatePlayer, removePlayer, bulkAddPlayers } = usePlayers(teamId);
-
+/**
+ * RosterSetup
+ *
+ * Fix: this used to call its own usePlayers(teamId) instance, completely
+ * disconnected from the usePlayers instance Dashboard uses to compute the
+ * roster checkmark/count. Adding a player here updated this component's
+ * local state but never touched Dashboard's — so the step card never
+ * showed as done. Now players/loading/addPlayer/updatePlayer/removePlayer/
+ * bulkAddPlayers all come from Dashboard's single hook instance as props,
+ * so there's exactly one source of truth.
+ */
+export default function RosterSetup({ players, loading, addPlayer, updatePlayer, removePlayer, bulkAddPlayers, onReady }) {
   const downloadTemplate = () => {
     const csv = [
       ['Jersey Number', 'Player Name', 'Position'],
@@ -424,19 +417,19 @@ export default function RosterSetup({ teamId, onReady }) {
     ]
       .map(row => row.join(','))
       .join('\n');
-  
+
     const blob = new Blob([csv], {
       type: 'text/csv;charset=utf-8;',
     });
-  
+
     const url = URL.createObjectURL(blob);
-  
+
     const link = document.createElement('a');
     link.href = url;
     link.download = 'LaxTrack_Roster_Template.csv';
     document.body.appendChild(link);
     link.click();
-  
+
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
@@ -471,7 +464,7 @@ export default function RosterSetup({ teamId, onReady }) {
 
       <BulkPaste onBulkAdd={bulkAddPlayers} />
 
-      <CSVUpload 
+      <CSVUpload
         onBulkAdd={bulkAddPlayers}
         onDownloadTemplate={downloadTemplate}
       />
@@ -535,7 +528,6 @@ const R = {
     padding: 10,
     background: 'rgba(26,107,58,.05)',
   },
-  
   previewRow: {
     fontSize: 12,
     padding: '4px 0',
