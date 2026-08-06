@@ -346,4 +346,9 @@ const W = {
   title: { fontSize: 20, fontWeight: 700, color: 'var(--txt)' },
   sub:   { fontSize: 14, color: 'var(--txt2)', maxWidth: 280, lineHeight: 1.6 },
   pulse: { width: 8, height: 8, borderRadius: '50%', background: '#8fd14f', animation: 'spin .8s linear infinite', marginTop: 8 },
+  startBtn: {
+    background: '#8fd14f', color: '#0b2e16', border: 'none',
+    borderRadius: 10, padding: '13px 28px', fontSize: 15, fontWeight: 800,
+    cursor: 'pointer', marginTop: 4,
+  },
 };
