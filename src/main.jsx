@@ -29,8 +29,9 @@ window.addEventListener(
 const path = window.location.pathname;
 
 const isPublicRoute =
-  path.startsWith('/track/') ||
-  path.startsWith('/live/');
+path.startsWith('/track/') ||
+path.startsWith('/live/') ||
+path.startsWith('/manage/');
 
 
 // Public games do NOT need authentication

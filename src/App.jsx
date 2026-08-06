@@ -4,13 +4,15 @@ import Login         from './auth/Login';
 import TrackRoute    from './routes/TrackRoute';
 import GameContainer from './pages/GameContainer';
 import { useAuth }   from './auth/AuthProvider';
+import ManagerView   from './pages/ManagerView';
 import './styles/globals.css';
 
 /**
  * App routing — manual path-based (no react-router needed for this simplicity)
  *
- * PUBLIC  /track/:token  → stat keeper view (no login)
- * PUBLIC  /live/:token   → fan read-only view (no login)
+ * PUBLIC  /track/:token   → stat keeper view (no login)
+ * PUBLIC  /live/:token    → fan read-only view (no login)
+ * PUBLIC  /manage/:token  → team manager view (no login)
  * PRIVATE /dashboard     → coach portal (login required)
  * PRIVATE /              → redirect to dashboard if logged in, else login
  */
@@ -18,8 +20,9 @@ export default function App() {
   const path = window.location.pathname;
 
   // ── Public routes — check BEFORE auth so trackers never see login ────
-  if (path.startsWith('/track/')) return <TrackRoute />;
-  if (path.startsWith('/live/'))  return <GameContainer mode="live" />;
+  if (path.startsWith('/track/'))   return <TrackRoute />;
+  if (path.startsWith('/live/'))    return <GameContainer mode="live" />;
+  if (path.startsWith('/manage/'))  return <ManagerView />;
 
   // ── Auth-gated coach portal ──────────────────────────────────────────
   const { user, loading } = useAuth();

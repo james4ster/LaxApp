@@ -294,11 +294,18 @@ export function useTeams() {
 
   useEffect(() => { load(); }, [load]);
 
-  const createTeam = useCallback(async (fields) => {
+   const createTeam = useCallback(async (fields) => {
     if (!user) throw new Error('Not signed in');
     const { data, error: err } = await supabase
       .from('teams')
-      .insert({ ...fields, coach_id: user.id, created_at: new Date().toISOString() })
+      .insert({
+        ...fields,
+        // One link for the whole season, generated once at creation —
+        // handed to the team manager/mom, not the coach's own login.
+        manager_token: crypto.randomUUID(),
+        coach_id:      user.id,
+        created_at:    new Date().toISOString(),
+      })
       .select()
       .single();
     if (err) throw err;
@@ -533,4 +540,46 @@ export function useSchedule(teamId) {
   };
 
   return { games, loading, error, addGame, removeGame, reload: load };
+}
+
+// ── useManagerView — team + full schedule, resolved by manager_token.
+// No auth required — same trust model as tracker_token/fan_token. This
+// is intentionally read-only re: game state (no "start game" action —
+// GameShell already auto-flips status to 'live' on first stat recorded,
+// so the manager view's job is just surfacing links, not driving state).
+export function useManagerView(token) {
+  const [team,    setTeam]    = useState(null);
+  const [games,   setGames]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+
+  useEffect(() => {
+    if (!token) { setError('No manager link provided.'); setLoading(false); return; }
+
+    (async () => {
+      const { data: teamData, error: teamErr } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('manager_token', token)
+        .maybeSingle();
+
+      if (teamErr || !teamData) {
+        setError('Team not found. Check your link.');
+        setLoading(false);
+        return;
+      }
+      setTeam(teamData);
+
+      const { data: gamesData, error: gamesErr } = await supabase
+        .from('games')
+        .select('*')
+        .or(`home_team_id.eq.${teamData.id},away_team_id.eq.${teamData.id}`)
+        .order('scheduled_at', { ascending: true });
+
+      if (!gamesErr) setGames(gamesData ?? []);
+      setLoading(false);
+    })();
+  }, [token]);
+
+  return { team, games, loading, error };
 }

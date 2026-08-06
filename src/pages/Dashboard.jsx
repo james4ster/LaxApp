@@ -225,6 +225,23 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Manager link — coach shares this once with whoever handles game
+          day (team mom/manager); it's their entry point, not the coach's. */}
+      {team && (
+        <div style={S.managerCard}>
+          <div>
+            <div style={S.managerTitle}>Team manager link</div>
+            <div style={S.managerSub}>Share this once — gives access to the schedule + tracker/fan links, no login needed.</div>
+          </div>
+          <button
+            style={S.managerCopyBtn}
+            onClick={() => navigator.clipboard.writeText(`${window.location.origin}/manage/${team.manager_token}`)}
+          >
+            Copy link
+          </button>
+        </div>
+      )}
+
       {/* Ready to track banner */}
       {readyToTrack && (
         <div style={S.cta}>
@@ -425,10 +442,25 @@ const S = {
   ctaText:  {},
   ctaTitle: { fontSize: 14, fontWeight: 800, color: 'var(--tpt)' },
   ctaSub:   { fontSize: 11, color: 'rgba(255,255,255,.65)', marginTop: 2 },
-  ctaBtn: {
+   ctaBtn: {
     background: 'var(--ta)', color: 'var(--tat)',
     borderRadius: 9, padding: '8px 14px',
     fontSize: 12, fontWeight: 800, textDecoration: 'none', flexShrink: 0,
+  },
+
+  managerCard: {
+    margin: '10px 20px 0',
+    background: 'var(--surf)', border: '1px solid var(--bdr)', borderRadius: 12,
+    padding: '12px 16px',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+    flexShrink: 0,
+  },
+  managerTitle: { fontSize: 13, fontWeight: 700, color: 'var(--txt)' },
+  managerSub:   { fontSize: 11, color: 'var(--txt2)', marginTop: 2, maxWidth: 340, lineHeight: 1.4 },
+  managerCopyBtn: {
+    background: 'var(--surf2)', border: '1px solid var(--bdr)', color: 'var(--txt)',
+    borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700,
+    cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
   },
 
   // ── App shell ──
