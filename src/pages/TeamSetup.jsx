@@ -17,6 +17,16 @@ import React from 'react';
  *   error         — string | null
  *   teamId        — string | null (null = new team)
  */
+
+// Only used to tidy up on blur if the coach hand-types something messy
+// (mixed case, spaces, punctuation). Live auto-fill from name happens
+// in useTeamSetup itself.
+const slugify = (str) =>
+  (str ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
 export default function TeamSetup({
   team,
   onFieldChange,
@@ -38,12 +48,26 @@ export default function TeamSetup({
       <div style={S.section}>
         <div style={S.field}>
           <label style={S.label}>Team name *</label>
-          <input
+                    <input
             style={S.input}
             value={team.name}
             onChange={e => onFieldChange('name', e.target.value)}
             placeholder="e.g. Lakewood Lax"
           />
+        </div>
+
+        <div style={S.field}>
+          <label style={S.label}>URL slug</label>
+          <input
+            style={S.input}
+            value={team.slug || ''}
+            onChange={e => onFieldChange('slug', e.target.value)}
+            onBlur={e => onFieldChange('slug', slugify(e.target.value))}
+            placeholder="lakewood-lax"
+          />
+          <div style={S.slugHint}>
+            laxtrack.app/t/{team.slug || '…'}
+          </div>
         </div>
 
         <div style={S.row}>
@@ -249,12 +273,17 @@ const S = {
     fontWeight:   700,
     cursor:       'pointer',
   },
-  errorMsg: {
+    errorMsg: {
     background:   'rgba(185,28,28,.1)',
     border:       '1px solid rgba(185,28,28,.3)',
     borderRadius: 8,
     padding:      '8px 12px',
     fontSize:     12,
     color:        '#e53e3e',
+  },
+  slugHint: {
+    fontSize:   11,
+    color:      'var(--txt2)',
+    fontFamily: 'monospace',
   },
 };

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 import { useOpponents } from '../hooks/useTeam';
 
@@ -80,7 +82,7 @@ export default function ScheduleSetup({ teamId, seasonYear, games, loading, addG
   const { opponents, addOpponent } = useOpponents(teamId);
 
   const [opponent,     setOpponent]     = useState('');
-  const [scheduledAt,  setScheduledAt]  = useState('');
+  const [scheduledAt,  setScheduledAt]  = useState(null);
   const [location,     setLocation]     = useState('');
   const [isHome,       setIsHome]       = useState(true);
   const [isExhibition, setIsExhibition] = useState(false);
@@ -97,19 +99,20 @@ export default function ScheduleSetup({ teamId, seasonYear, games, loading, addG
       await addOpponent(opponent.trim());
       await addGame({
         opponent:      opponent.trim(),
-        scheduled_at:  scheduledAt || null,
+        scheduled_at:  scheduledAt ? scheduledAt.toISOString() : null,
         location:      location.trim() || null,
         is_home:       isHome,
         season_year:   seasonYear ?? null,
         is_exhibition: isExhibition,
       });
-      setOpponent(''); setScheduledAt(''); setLocation(''); setIsExhibition(false);
+      setOpponent(''); setScheduledAt(null); setLocation(''); setIsExhibition(false);
     } catch (e) { setErr(e.message); }
     setBusy(false);
   };
 
   return (
-    <div style={{ paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+     <div style={{ paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <DatePickerTheme />
 
       {/* Game list */}
       {loading && <div style={{ fontSize: 12, color: 'var(--txt2)' }}>Loading…</div>}
@@ -158,14 +161,34 @@ export default function ScheduleSetup({ teamId, seasonYear, games, loading, addG
         </div>
 
         <div style={SC.twoCol}>
-          <div style={SC.field}>
+           <div style={SC.field}>
             <label style={SC.lbl}>Date & time</label>
-            <input
-              style={SC.input}
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={e => setScheduledAt(e.target.value)}
-            />
+            <div style={SC.dateFieldWrap}>
+              <DatePicker
+                selected={scheduledAt}
+                onChange={date => setScheduledAt(date)}
+                showTimeSelect
+                timeIntervals={15}
+                dateFormat="EEE, MMM d, yyyy h:mm aa"
+                placeholderText="Select date & time"
+                className="lax-datepicker-input"
+                wrapperClassName="lax-datepicker-wrapper"
+                popperPlacement="bottom-start"
+              />
+              {/* Decorative — pointer-events none so clicks pass through
+                  to the input underneath and still open the picker. */}
+              <svg
+                style={SC.dateIcon}
+                width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
           </div>
           <div style={SC.field}>
             <label style={SC.lbl}>Home / Away</label>
@@ -220,6 +243,41 @@ export default function ScheduleSetup({ teamId, seasonYear, games, loading, addG
   );
 }
 
+const DatePickerTheme = () => (
+  <style>{`
+    .lax-datepicker-wrapper { width: 100%; }
+    .lax-datepicker-input {
+      padding: 8px 32px 8px 9px; border-radius: 7px; border: 1px solid var(--bdr);
+      background: var(--surf); color: var(--txt); font-size: 13px; outline: none;
+      width: 100%; box-sizing: border-box; font-family: inherit;
+    }
+    .lax-datepicker-input:focus { border-color: var(--tp); }
+    .react-datepicker {
+      font-family: inherit; border: 1px solid var(--bdr); border-radius: 10px;
+      overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+    .react-datepicker__header {
+      background: var(--surf2); border-bottom: 1px solid var(--bdr);
+    }
+    .react-datepicker__current-month, .react-datepicker-time__header {
+      color: var(--txt); font-size: 13px; font-weight: 700;
+    }
+    .react-datepicker__day-name, .react-datepicker__day, .react-datepicker__time-name {
+      color: var(--txt); font-size: 12px;
+    }
+    .react-datepicker__day:hover, .react-datepicker__time-list-item:hover {
+      background: var(--surf2) !important;
+    }
+    .react-datepicker__day--selected, .react-datepicker__day--keyboard-selected,
+    .react-datepicker__time-list-item--selected {
+      background: var(--tp) !important; color: var(--tpt) !important; font-weight: 700;
+    }
+    .react-datepicker__day--outside-month { color: var(--txt2); opacity: .4; }
+    .react-datepicker__triangle { display: none; }
+    .react-datepicker__navigation-icon::before { border-color: var(--txt2); }
+  `}</style>
+);
+
 const SC = {
   list: { border: '1px solid var(--bdr)', borderRadius: 9, overflow: 'hidden', marginBottom: 4 },
   gameRow: {
@@ -243,6 +301,11 @@ const SC = {
     padding: '8px 9px', borderRadius: 7, border: '1px solid var(--bdr)',
     background: 'var(--surf)', color: 'var(--txt)', fontSize: 13, outline: 'none',
     width: '100%',
+  },
+  dateFieldWrap: { position: 'relative' },
+  dateIcon: {
+    position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+    color: 'var(--txt2)', pointerEvents: 'none',
   },
   comboList: {
     position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { useTeams, usePlayers, useSchedule } from '../hooks/useTeam';
 import TeamSetup from '../pages/TeamSetup';
@@ -47,7 +47,15 @@ const BLANK_FORM = {
   primary_color:   '#1A6B3A',
   secondary_color: '#0b2e16',
   accent_color:    '#8FD14F',
+  slug:            '',
 };
+
+const generateSlug = (name) =>
+  (name ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -79,13 +87,19 @@ export default function Dashboard() {
   } = useSchedule(team?.id);
 
   // ── Team-edit form state, kept in sync with whichever team is selected ──
-  const [formFields, setFormFields] = useState(BLANK_FORM);
+   const [formFields, setFormFields] = useState(BLANK_FORM);
   const [saving,     setSaving]     = useState(false);
   const [saved,      setSaved]      = useState(false);
   const [formError,  setFormError]  = useState(null);
   const [logoUploading, setLogoUploading] = useState(false);
 
+  // Tracks whether the coach has hand-edited the slug for the *currently
+  // loaded* team — reset whenever the selected team changes (see effect
+  // below), since "touched" from one team shouldn't carry over to another.
+  const slugTouched = useRef(false);
+
   useEffect(() => {
+    slugTouched.current = !!team?.slug; // existing non-empty slug counts as touched
     setFormFields(team ? {
       name:            team.name            ?? '',
       gender:          team.gender          ?? '',
@@ -93,11 +107,22 @@ export default function Dashboard() {
       primary_color:   team.primary_color   ?? '#1A6B3A',
       secondary_color: team.secondary_color ?? '#0b2e16',
       accent_color:    team.accent_color    ?? '#8FD14F',
+      slug:            team.slug            ?? '',
     } : BLANK_FORM);
   }, [team?.id]);
 
-  const updateField = (field, value) =>
-    setFormFields(prev => ({ ...prev, [field]: value }));
+  const updateField = (field, value) => {
+    if (field === 'slug') {
+      slugTouched.current = true; // coach took over — stop auto-syncing
+    }
+    setFormFields(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === 'name' && !slugTouched.current) {
+        next.slug = generateSlug(value);
+      }
+      return next;
+    });
+  };
 
   // Handles both creating a brand-new team and updating the selected one.
   const saveTeam = async () => {

@@ -29,10 +29,11 @@ export function useTeamSetup() {
     accent_color:    '#8FD14F',
     logo_url:        null,
     organization_id: null,
+    slug:            '',
   });
 
   // ── Ref mirrors teamData so async callbacks always see current values ──
-  const teamDataRef = useRef(teamData);
+    const teamDataRef = useRef(teamData);
   const setTeamData = useCallback((updater) => {
     _setTeamData(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
@@ -40,6 +41,17 @@ export function useTeamSetup() {
       return next;
     });
   }, []);
+
+  // Tracks whether the coach has hand-edited the slug — once true, typing
+  // in the name field stops auto-overwriting it. Ref (not state) since it
+  // shouldn't trigger a re-render on its own.
+  const slugTouched = useRef(false);
+
+  const generateSlug = (name) =>
+    (name ?? '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
 
   const [teamId,       setTeamId]       = useState(null);
   const [logoPreview,  setLogoPreview]  = useState(null);
@@ -72,7 +84,13 @@ export function useTeamSetup() {
       accent_color:    data.accent_color    ?? '#8FD14F',
       logo_url:        data.logo_url        ?? null,
       organization_id: data.organization_id ?? null,
+      slug:            data.slug            ?? '',
     });
+
+    // A loaded team already has a slug the coach presumably chose/kept —
+    // treat it as touched so typing in the name field won't clobber it.
+    if (data.slug) slugTouched.current = true;
+
 
     // ── FIX 3: set logoPreview from DB value so tab-switch shows the logo ──
     if (data.logo_url) {
@@ -140,6 +158,34 @@ export function useTeamSetup() {
     // ── FIX 1: read from ref — always current, never stale closure ──────
     const data = teamDataRef.current;
 
+    // ── Slug uniqueness check ────────────────────────────────────────
+    // Runs on every save (create or update). Excludes the current team's
+    // own row so re-saving with an unchanged slug doesn't false-positive.
+    if (data.slug) {
+      let slugQuery = supabase
+        .from('teams')
+        .select('id')
+        .eq('slug', data.slug);
+
+      if (teamId) {
+        slugQuery = slugQuery.neq('id', teamId);
+      }
+
+      const { data: slugMatch, error: slugErr } = await slugQuery.maybeSingle();
+
+      if (slugErr) {
+        setSaving(false);
+        setError(slugErr.message ?? 'Could not verify slug availability');
+        return null;
+      }
+
+      if (slugMatch) {
+        setSaving(false);
+        setError(`The URL "${data.slug}" is already taken — try another.`);
+        return null;
+      }
+    }
+
     const payload = {
       name:            data.name,
       gender:          data.gender,
@@ -149,6 +195,7 @@ export function useTeamSetup() {
       accent_color:    data.accent_color,
       logo_url:        data.logo_url,       // ← now correctly populated
       organization_id: data.organization_id,
+      slug:            data.slug,
       coach_id:        user.id,
       updated_at:      new Date().toISOString(),
     };
@@ -188,8 +235,19 @@ export function useTeamSetup() {
 
   // ── Field updater helper ──────────────────────────────────────────────
   const updateField = useCallback((field, value) => {
-    setTeamData(prev => ({ ...prev, [field]: value }));
+    if (field === 'slug') {
+      slugTouched.current = true; // coach took over — stop auto-syncing
+    }
+
+    setTeamData(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === 'name' && !slugTouched.current) {
+        next.slug = generateSlug(value);
+      }
+      return next;
+    });
   }, [setTeamData]);
+
 
   return {
     teamData,
@@ -437,7 +495,7 @@ export function useSchedule(teamId) {
 
   useEffect(() => { load(); }, [load]);
 
-  const addGame = async (fields) => {
+    const addGame = async (fields) => {
     const insert = {
       home_team_id:  fields.is_home ? teamId : null,
       away_team_id:  fields.is_home ? null   : teamId,
@@ -447,7 +505,13 @@ export function useSchedule(teamId) {
       season_year:   fields.season_year  ?? null,
       is_exhibition: !!fields.is_exhibition,
       status:        'scheduled',
+      // Generated at schedule time (not "start game") so the coach can
+      // share tracker/fan links before game day. crypto.randomUUID() is
+      // available in all evergreen browsers LaxTrack targets.
+      tracker_token: crypto.randomUUID(),
+      fan_token:     crypto.randomUUID(),
     };
+
     const { data, error: err } = await supabase
       .from('games')
       .insert(insert)

@@ -204,7 +204,7 @@ export default function Track({
   };
 
   const svp    = typeof svPct === 'function' ? svPct() : svPct;
-  const activeG = activeGoalie ?? goalies[0];
+  const activeG = activeGoalie ?? goalies?.[0];
 
   return (
     <div style={S.shell}>

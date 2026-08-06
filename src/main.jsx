@@ -1,25 +1,56 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+
 import { AuthProvider } from './auth/AuthProvider';
-
-
-// Fix mobile browser URL bar eating into viewport height.
-// Sets --vh to 1% of the actual visible window height, updated on resize.
-function setVh() {
-  document.documentElement.style.setProperty(
-    '--vh', `${window.innerHeight * 0.01}px`
-  );
-}
-setVh();
-window.addEventListener('resize', setVh);
-// Also update on scroll since URL bar show/hide triggers no resize event on iOS
-window.addEventListener('scroll', setVh, { passive: true });
 
 import './styles/globals.css';
 import App from './App.jsx';
 
-createRoot(document.getElementById('root')).render(
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+
+// Fix mobile browser URL bar eating into viewport height.
+function setVh() {
+  document.documentElement.style.setProperty(
+    '--vh',
+    `${window.innerHeight * 0.01}px`
+  );
+}
+
+setVh();
+
+window.addEventListener('resize', setVh);
+
+window.addEventListener(
+  'scroll',
+  setVh,
+  { passive: true }
 );
+
+
+const path = window.location.pathname;
+
+const isPublicRoute =
+  path.startsWith('/track/') ||
+  path.startsWith('/live/');
+
+
+// Public games do NOT need authentication
+if (isPublicRoute) {
+
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+
+} else {
+
+  // Coach portal DOES require authentication
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </StrictMode>
+  );
+
+}
