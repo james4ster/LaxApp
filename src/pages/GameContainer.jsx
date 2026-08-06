@@ -260,9 +260,11 @@ function GameShell({ gameId, mode, tab, setTab }) {
 
 // ── WaitingScreen — shown to trackers before manager starts the game ──────
 function WaitingScreen({ gameId, onStarted, mode }) {
-  const [checking, setChecking] = useState(false);
+  const [starting, setStarting] = useState(false);
 
-  // Poll every 5 seconds to see if manager has started the game
+  // Poll every 5 seconds to see if the game has gone live — covers the
+  // fan side (waiting on the tracker) and also catches the tracker's own
+  // button below without needing extra local state juggling.
   useEffect(() => {
     const interval = setInterval(async () => {
       const { data } = await supabase
@@ -278,16 +280,38 @@ function WaitingScreen({ gameId, onStarted, mode }) {
     return () => clearInterval(interval);
   }, [gameId, onStarted]);
 
+  // Only the tracker can break out of this screen manually — a fan has
+  // no business flipping game state. This was previously a dead end:
+  // markLive() only fires from inside the tracker UI, which is exactly
+  // what's gated behind this screen, so nothing could ever set it live.
+  const handleStart = async () => {
+    setStarting(true);
+    const { error } = await supabase
+      .from('games')
+      .update({ status: 'live', started_at: new Date().toISOString() })
+      .eq('id', gameId)
+      .eq('status', 'scheduled'); // no-op if it's already live elsewhere
+    setStarting(false);
+    if (!error) onStarted();
+  };
+
   return (
     <div style={W.wrap}>
       <div style={W.icon}>🥍</div>
-        <div style={W.title}>Waiting for game to start</div>
+      <div style={W.title}>Waiting for game to start</div>
       <div style={W.sub}>
         {mode === 'live'
           ? "The game hasn't started yet. This page will update automatically once tracking begins."
-          : 'The team manager will start the game shortly. This page will update automatically.'}
+          : "Tap below once you're ready to start recording stats."}
       </div>
-      <div style={W.pulse} />
+
+      {mode === 'track' ? (
+        <button style={W.startBtn} onClick={handleStart} disabled={starting}>
+          {starting ? 'Starting…' : 'Start tracking →'}
+        </button>
+      ) : (
+        <div style={W.pulse} />
+      )}
     </div>
   );
 }
