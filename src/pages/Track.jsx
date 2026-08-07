@@ -216,15 +216,17 @@ export default function Track({
             onClick={() => !gameEnded && onSetPoss?.('us')}
             style={{
               ...S.possBtn,
-              background:  possState === 'us' ? 'rgba(26,107,58,.65)' : 'rgba(26,107,58,.22)',
-              boxShadow:   possState === 'us' ? '0 0 0 2px var(--tp)'  : 'none',
+              background:  'var(--tp)',
+              boxShadow:   possState === 'us' ? '0 0 0 2.5px var(--ta)' : 'none',
+              opacity:     possState === 'us' ? 1 : 0.55,
             }}
           >
-            <div style={S.possLbl}>US</div>
-            <div style={{ ...S.possTime, color: possState === 'us' ? 'var(--ta)' : 'rgba(255,255,255,.35)' }}>
+            <div style={{ ...S.possLbl, color: 'rgba(255,255,255,.75)' }}>US</div>
+            <div style={{ ...S.possTime, color: 'var(--ta)' }}>
               {fmtMs(usMs)}
             </div>
           </button>
+
 
           <button
             onClick={() => !gameEnded && onSetPoss?.('none')}
@@ -241,12 +243,13 @@ export default function Track({
             onClick={() => !gameEnded && onSetPoss?.('them')}
             style={{
               ...S.possBtn,
-              background:  possState === 'them' ? 'rgba(155,28,28,.65)' : 'rgba(155,28,28,.22)',
-              boxShadow:   possState === 'them' ? '0 0 0 2px var(--opp)' : 'none',
+              background:  'var(--opp)',
+              boxShadow:   possState === 'them' ? '0 0 0 2.5px var(--opp-acc)' : 'none',
+              opacity:     possState === 'them' ? 1 : 0.55,
             }}
           >
-            <div style={S.possLbl}>THEM</div>
-            <div style={{ ...S.possTime, color: possState === 'them' ? 'var(--opp-acc)' : 'rgba(255,255,255,.35)' }}>
+            <div style={{ ...S.possLbl, color: 'rgba(255,255,255,.75)' }}>THEM</div>
+            <div style={{ ...S.possTime, color: 'var(--opp-acc)' }}>
               {fmtMs(themMs)}
             </div>
           </button>

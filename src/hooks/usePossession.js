@@ -43,19 +43,19 @@ export function usePossession(gameId = null, isHome = true) {
   }, []);
 
   // ── Rebuild local clock state from a server event log ──────────────────
-  const applyEvents = useCallback(
+   const applyEvents = useCallback(
     (events) => {
       const now = Date.now();
       let us = 0;
       let them = 0;
       let current = null;
+      const usTeam = isHome ? 'home' : 'away';
+      const themTeam = isHome ? 'away' : 'home';
 
       for (const e of events) {
         const start = new Date(e.started_at).getTime();
         const end = e.ended_at ? new Date(e.ended_at).getTime() : now;
         const duration = Math.max(0, end - start);
-        const usTeam = isHome ? 'home' : 'away';
-        const themTeam = isHome ? 'away' : 'home';
         if (e.team === usTeam) us += duration;
         if (e.team === themTeam) them += duration;
         if (!e.ended_at) current = e;
@@ -63,7 +63,13 @@ export function usePossession(gameId = null, isHome = true) {
 
       committedUs.current = us;
       committedThem.current = them;
-      currentSide.current = current?.team ?? 'none';
+      // FIX: map the DB's home/away label back to us/them before storing.
+      // Previously this stored the raw 'home'/'away' value, which never
+      // equals 'us', so every realtime sync silently misrouted the ticking
+      // clock onto themMs regardless of which side was actually live.
+      currentSide.current = current
+        ? (current.team === usTeam ? 'us' : 'them')
+        : 'none';
       startTs.current = current ? new Date(current.started_at).getTime() : null;
 
       setPossState(currentSide.current);
