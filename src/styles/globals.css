@@ -15,6 +15,9 @@
     --opp:     #9b1c1c;
     --oppt:    #ffffff;
     --opp-acc: #ff9090;  /* light accent for numbers on them-colored buttons */
+
+  --tp-muted:  rgba(26, 107, 58, 0.75);   /* us inactive possession */
+  --opp-muted: rgba(155, 28, 28, 0.75);   /* them inactive possession */
   
     /* Light mode surfaces */
     --bg:    #efefed;
@@ -43,6 +46,9 @@
     --txt:   #f0f0ee;
     --txt2:  #9a9a96;
     --bdr:   rgba(255, 255, 255, 0.09);
+    --tp-muted:  rgba(26, 107, 58, 0.85);   /* slightly more opaque in dark */
+    --opp-muted: rgba(155, 28, 28, 0.85);
+
   
     /* Team palette stays the same in dark mode — intentional,
        team colors should look identical regardless of mode */

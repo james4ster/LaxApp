@@ -55,24 +55,24 @@ export default function PossessionWidget({ possState, usMs, themMs, onSetPoss })
 }
 
 function PossBtn({ label, active, totalMs, onTap, colorClass }) {
-const isUs = colorClass === 'us';
+  const isUs = colorClass === 'us';
 
-return (
-<button
-onClick={onTap}
-style={{
-...styles.possBtn,
-        background: isUs ? 'var(--tp)' : '#b91c1c',
+  return (
+    <button
+      onClick={onTap}
+      style={{
+        ...styles.possBtn,
+        background: isUs ? 'var(--tp)' : 'var(--surf3)',
         boxShadow: active
-? `0 0 0 2.5px ${isUs ? 'var(--ta)' : '#e53e3e'}, 0 3px 0 rgba(0,0,0,.18)`
-: '0 3px 0 rgba(0,0,0,.18)',
+          ? `0 0 0 2.5px ${isUs ? 'var(--ta)' : '#e53e3e'}, 0 3px 0 rgba(0,0,0,.18)`
+          : '0 3px 0 rgba(0,0,0,.18)',
       }}
->
-      <div style={{ ...styles.possBtnLbl, color: '#fff' }}>
-{label}
+    >
+      <div style={{ ...styles.possBtnLbl, color: isUs ? 'var(--tpt)' : 'var(--txt)' }}>
+        {label}
       </div>
-      <div style={{ ...styles.possTime, color: isUs ? 'var(--ta)' : '#fecaca' }}>
-{fmtMs(totalMs)}
+      <div style={{ ...styles.possTime, color: isUs ? 'var(--ta)' : 'var(--txt)' }}>
+        {fmtMs(totalMs)}
       </div>
     </button>
   );
