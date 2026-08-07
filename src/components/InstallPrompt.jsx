@@ -11,10 +11,7 @@ export default function InstallPrompt() {
 
   useEffect(() => {
     // Already installed as PWA — don't show
-    console.log("standalone:", window.matchMedia('(display-mode: standalone)').matches);
-console.log("dismissed:", isDismissed);
-console.log("userAgent:", navigator.userAgent);
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
+   if (window.matchMedia('(display-mode: standalone)').matches) return;
     if (isDismissed) return;
 
     // iOS doesn't fire beforeinstallprompt — show manual instructions instead
