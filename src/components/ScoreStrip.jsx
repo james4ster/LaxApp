@@ -56,13 +56,20 @@ export default function ScoreStrip({
   onToggleDark,
 }) {
   return (
-    <div style={s.strip}>
+    <div
+      style={{
+        ...s.strip,
+        background: isDark ? 'var(--ts)' : 'var(--surf)',
+        color: isDark ? '#fff' : 'var(--txt)',
+        borderBottom: '1px solid var(--bdr)',
+      }}
+    >
       <div style={s.scoreBlock}>
-        <span style={s.lbl}>Us</span>
+        <span style={{ ...s.lbl, color: isDark ? 'rgba(255,255,255,.65)' : 'var(--txt2)' }}>Us</span>
         <span style={s.numUs}>{scoreUs}</span>
-        <span style={s.dash}>–</span>
-        <span style={s.numThem}>{scoreThem}</span>
-        <span style={s.lbl}>Them</span>
+        <span style={{ ...s.dash, color: isDark ? 'rgba(255,255,255,.5)' : 'var(--txt2)' }}>–</span>
+        <span style={{ ...s.numThem, color: isDark ? '#fff' : 'var(--txt)' }}>{scoreThem}</span>
+        <span style={{ ...s.lbl, color: isDark ? 'rgba(255,255,255,.65)' : 'var(--txt2)' }}>Them</span>
       </div>
 
       <div style={s.qtabs}>
@@ -70,6 +77,7 @@ export default function ScoreStrip({
           <button
             key={q}
             onClick={() => onQuarterChange(q)}
+            disabled={!onQuarterChange}
             style={{
               padding: '3px 8px',
               borderRadius: 5,
@@ -77,11 +85,13 @@ export default function ScoreStrip({
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: '.2px',
-              cursor: 'pointer',
-              background: quarter === q ? 'var(--ta)' : 'rgba(255,255,255,.1)',
-              color: quarter === q ? 'var(--tat)' : 'rgba(255,255,255,.3)',
+              background: quarter === q ? 'var(--ta)' : isDark ? 'rgba(255,255,255,.14)' : 'var(--surf2)',
+              color: quarter === q ? 'var(--tat)' : isDark ? 'rgba(255,255,255,.8)' : 'var(--txt2)',
               transition: 'background .12s, color .12s',
+              opacity: onQuarterChange ? 1 : 0.55,
+              cursor: onQuarterChange ? 'pointer' : 'default',
             }}
+            aria-pressed={quarter === q}
           >
             {q === 'OT' ? 'OT' : `Q${q}`}
           </button>
@@ -91,9 +101,14 @@ export default function ScoreStrip({
       <div style={s.right}>
         <div className="live-pip" />
         <button
-          style={s.darkBtn}
+          style={{
+            ...s.darkBtn,
+            background: isDark ? 'rgba(255,255,255,.14)' : 'var(--surf2)',
+            color: isDark ? '#fff' : 'var(--txt)',
+          }}
           onClick={onToggleDark}
-          aria-label="Toggle dark mode"
+          aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+          title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
         >
           {isDark ? '☀️' : '🌙'}
         </button>

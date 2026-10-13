@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import PlayerStatsTable from '../components/PlayerStatsTable';
 
 function fmtMs(ms) {
@@ -27,8 +28,46 @@ export default function LiveView({
   ga,
   quarterStats = {},   // { '1': { goal, ogoal, sog, oshot }, ... }
   gameEnded = false,
+  isDark = false,
+  onToggleDark,
+  rosterError = '',
+  currentFanViewers = 0,
 }) {
   const [tab, setTab] = useState('team');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const fanUrl = `${window.location.origin}${window.location.pathname}`;
+
+  const copyFanLink = async () => {
+    try {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable.');
+        await navigator.clipboard.writeText(fanUrl);
+      } catch {
+        const input = document.createElement('textarea');
+        input.value = fanUrl;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        let didCopy = false;
+        try {
+          didCopy = document.execCommand('copy');
+        } finally {
+          document.body.removeChild(input);
+        }
+        if (!didCopy) throw new Error('Clipboard access is unavailable.');
+      }
+    } catch (error) {
+      console.error('Unable to copy fan link', error);
+      setCopyError('Could not copy automatically. You can select and copy the link above.');
+      return;
+    }
+    setCopyError('');
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
 
   return (
     <div style={S.outer}>
@@ -44,6 +83,10 @@ export default function LiveView({
           usMs={usMs}
           themMs={themMs}
           gameEnded={gameEnded}
+          isDark={isDark}
+          onToggleDark={onToggleDark}
+          currentFanViewers={currentFanViewers}
+          onShare={() => setShareOpen(true)}
         />
 
         {/* Quarter breakdown — only renders once Q1 has data */}
@@ -60,13 +103,21 @@ export default function LiveView({
                 background: tab === t ? 'var(--surf)' : 'none',
                 color:      tab === t ? 'var(--txt)'  : 'var(--txt2)',
                 boxShadow:  tab === t ? '0 1px 4px rgba(0,0,0,.1)' : 'none',
+                border:     tab === t ? '1px solid var(--bdr)' : '1px solid transparent',
               }}
+              aria-pressed={tab === t}
             >
               {t === 'team' ? 'Team Stats' : 'Player Stats'}
             </button>
           ))}
         </div>
       </div>
+
+      {rosterError && (
+        <div role="alert" style={S.rosterError}>
+          Player stats unavailable: {rosterError}
+        </div>
+      )}
 
       {/* Scrollable area */}
       <div style={S.scroll} className="scroll-y">
@@ -91,6 +142,30 @@ export default function LiveView({
           />
         )}
       </div>
+
+      {shareOpen && (
+        <div style={S.shareOverlay} role="presentation" onClick={() => setShareOpen(false)}>
+          <section
+            style={S.shareDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fan-share-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button type="button" style={S.shareClose} onClick={() => setShareOpen(false)} aria-label="Close share dialog">×</button>
+            <h2 id="fan-share-title" style={S.shareTitle}>Share Live View</h2>
+            <p style={S.shareSub}>Let another fan scan this QR code to open the same live view.</p>
+            <div style={S.shareQr}>
+              <QRCodeSVG value={fanUrl} size={220} bgColor="#fff" fgColor="#111" />
+            </div>
+            <div style={S.shareUrl}>{fanUrl}</div>
+            {copyError && <div role="alert" style={S.shareError}>{copyError}</div>}
+            <button type="button" style={S.shareCopy} onClick={copyFanLink}>
+              {copied ? '✓ Link copied' : 'Copy fan link'}
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -98,22 +173,51 @@ export default function LiveView({
 // ── Scoreboard ────────────────────────────────────────────────────────────────
 // Clean single score display — no duplicate number in top-left.
 // Period pips + possession times live inside the card.
-function Scoreboard({ scoreUs, scoreThem, quarter, usMs, themMs, gameEnded }) {
+function Scoreboard({
+  scoreUs, scoreThem, quarter, usMs, themMs, gameEnded, isDark, onToggleDark, currentFanViewers, onShare,
+}) {
   return (
     <div style={SB.card}>
 
       {/* Status pill */}
-      <div style={SB.statusRow}>
-        {gameEnded ? (
-          <div style={{ ...SB.pill, background: 'rgba(255,255,255,.12)', color: 'rgba(255,255,255,.6)' }}>
-            FINAL
+      <div style={SB.header}>
+        <div style={SB.statusBlock}>
+          <div style={SB.statusGroup} aria-label={`Live view${gameEnded ? ', final' : `, quarter ${quarter}`}`}>
+            {gameEnded ? (
+              <div style={{ ...SB.pill, background: 'rgba(255,255,255,.12)', color: 'rgba(255,255,255,.75)' }}>
+                FINAL
+              </div>
+            ) : (
+              <div style={{ ...SB.pill, background: 'rgba(255,63,63,.18)', color: '#ff9999' }}>
+                <span style={SB.liveDot} /> LIVE · Q{quarter}
+              </div>
+            )}
           </div>
-        ) : (
-          <div style={{ ...SB.pill, background: 'rgba(255,63,63,.18)', color: '#ff8080' }}>
-            <span style={SB.liveDot} /> LIVE · Q{quarter}
+          <div style={SB.viewerCount} aria-live="polite">
+            {currentFanViewers} viewing now
           </div>
-        )}
-        {/* Quarter pips */}
+        </div>
+
+        <div style={SB.controls}>
+          <button type="button" onClick={onShare} style={SB.shareButton} aria-label="Show QR code to share Live View">
+            Share
+          </button>
+          <button
+            type="button"
+            onClick={onToggleDark}
+            style={{
+              ...SB.themeButton,
+              background: isDark ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.92)',
+              color: isDark ? '#fff' : '#172018',
+            }}
+            aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+            title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </div>
+      <div style={SB.periodRow} aria-label={`Quarter ${quarter} of 4`}>
         <div style={SB.pips}>
           {[1,2,3,4].map(q => (
             <div key={q} style={{
@@ -165,12 +269,19 @@ const SB = {
     padding:      '10px 14px 12px',
     marginBottom: 7,
   },
-  statusRow: {
-    display:        'flex',
-    alignItems:     'center',
-    justifyContent: 'space-between',
-    marginBottom:   8,
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  statusBlock: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, minWidth: 0 },
+  statusGroup: { display: 'flex', alignItems: 'center', gap: 6 },
+  viewerCount: {
+    color: 'rgba(255,255,255,.82)',
+    fontSize: 10,
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
   },
+  controls: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 7, flexShrink: 0 },
+  periodRow: { display: 'flex', justifyContent: 'center', padding: '8px 0 3px' },
+  themeButton: { border: '1px solid rgba(255,255,255,.32)', borderRadius: 8, minWidth: 38, minHeight: 36, fontSize: 16, cursor: 'pointer', flexShrink: 0 },
+  shareButton: { border: '1px solid rgba(255,255,255,.32)', borderRadius: 8, minHeight: 36, padding: '0 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, background: 'rgba(255,255,255,.92)', color: '#172018' },
   pill: {
     display:       'inline-flex',
     alignItems:    'center',
@@ -189,8 +300,8 @@ const SB = {
     animation:    'blink 1.4s ease-in-out infinite',
     flexShrink:   0,
   },
-  pips: { display: 'flex', gap: 4 },
-  pip:  { width: 8, height: 8, borderRadius: 2 },
+  pips: { display: 'flex', gap: 6, alignItems: 'center', padding: '0 2px' },
+  pip:  { width: 10, height: 10, borderRadius: 3, flexShrink: 0 },
   scoreRow: {
     display:        'flex',
     alignItems:     'center',
@@ -378,6 +489,16 @@ const S = {
   outer:  { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 },
   top:    { padding: '8px 9px 0', flexShrink: 0 },
   tabs:   { display: 'flex', background: 'var(--surf2)', borderRadius: 9, padding: 3, marginBottom: 0 },
-  tab:    { flex: 1, padding: '6px 4px', border: 'none', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .12s' },
+  tab:    { flex: 1, padding: '6px 4px', minHeight: 40, border: 'none', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .12s' },
   scroll: { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '8px 9px 8px' },
+  rosterError: { padding: '6px 10px', color: 'var(--danger)', background: 'var(--surf)', fontSize: 12, flexShrink: 0 },
+  shareOverlay: { position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.68)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  shareDialog: { position: 'relative', width: '100%', maxWidth: 360, background: 'var(--surf)', color: 'var(--txt)', border: '1px solid var(--bdr)', borderRadius: 16, padding: '26px 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' },
+  shareClose: { position: 'absolute', top: 8, right: 12, border: 0, background: 'none', color: 'var(--txt2)', fontSize: 28, cursor: 'pointer' },
+  shareTitle: { margin: 0, fontSize: 20 },
+  shareSub: { margin: 0, color: 'var(--txt2)', fontSize: 13, lineHeight: 1.4 },
+  shareQr: { background: '#fff', padding: 10, borderRadius: 10 },
+  shareUrl: { maxWidth: '100%', overflowWrap: 'anywhere', fontSize: 11, color: 'var(--txt2)', fontFamily: 'monospace' },
+  shareError: { color: 'var(--danger)', fontSize: 12 },
+  shareCopy: { width: '100%', minHeight: 44, border: 0, borderRadius: 10, background: 'var(--tp)', color: 'var(--tpt)', fontSize: 14, fontWeight: 700, cursor: 'pointer' },
 };

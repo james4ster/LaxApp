@@ -553,8 +553,24 @@ export function useManagerView(token) {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
+  const loadGames = useCallback(async (teamId) => {
+    const { data, error: gamesErr } = await supabase
+      .from('games')
+      .select('*')
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+      .order('scheduled_at', { ascending: true });
+
+    if (gamesErr) {
+      setError(gamesErr.message);
+      return;
+    }
+    setGames(data ?? []);
+    setError(null);
+  }, []);
+
   useEffect(() => {
     if (!token) { setError('No manager link provided.'); setLoading(false); return; }
+    let cancelled = false;
 
     (async () => {
       const { data: teamData, error: teamErr } = await supabase
@@ -568,18 +584,21 @@ export function useManagerView(token) {
         setLoading(false);
         return;
       }
+      if (cancelled) return;
       setTeam(teamData);
 
-      const { data: gamesData, error: gamesErr } = await supabase
-        .from('games')
-        .select('*')
-        .or(`home_team_id.eq.${teamData.id},away_team_id.eq.${teamData.id}`)
-        .order('scheduled_at', { ascending: true });
-
-      if (!gamesErr) setGames(gamesData ?? []);
+      await loadGames(teamData.id);
+      if (cancelled) return;
       setLoading(false);
     })();
-  }, [token]);
+    return () => { cancelled = true; };
+  }, [token, loadGames]);
+
+  useEffect(() => {
+    if (!team?.id) return;
+    const intervalId = window.setInterval(() => loadGames(team.id), 15000);
+    return () => window.clearInterval(intervalId);
+  }, [team?.id, loadGames]);
 
   return { team, games, loading, error };
 }

@@ -20,13 +20,13 @@
   --opp-muted: rgba(155, 28, 28, 0.75);   /* them inactive possession */
   
     /* Light mode surfaces */
-    --bg:    #efefed;
+    --bg:    #f2f5f1;
     --surf:  #ffffff;
-    --surf2: #e6e6e3;
-    --surf3: #d8d8d4;
-    --txt:   #111110;
-    --txt2:  #6b6b68;
-    --bdr:   rgba(0, 0, 0, 0.08);
+    --surf2: #e7ece7;
+    --surf3: #d7e0d8;
+    --txt:   #111710;
+    --txt2:  #535d54;
+    --bdr:   rgba(20, 35, 24, 0.16);
   
     /* Semantic */
     --danger: #b91c1c;
@@ -39,13 +39,13 @@
   /* Dark mode — toggled by adding class="dk" to #root */
   .dk {
     /* Surfaces — more stepped contrast than before */
-    --bg:    #0d0d0d;
-    --surf:  #1a1a1a;
-    --surf2: #242424;
-    --surf3: #2e2e2e;
-    --txt:   #f0f0ee;
-    --txt2:  #9a9a96;
-    --bdr:   rgba(255, 255, 255, 0.09);
+    --bg:    #080b09;
+    --surf:  #151a16;
+    --surf2: #222a24;
+    --surf3: #303b32;
+    --txt:   #f3f6f3;
+    --txt2:  #b0bab1;
+    --bdr:   rgba(255, 255, 255, 0.16);
     --tp-muted:  rgba(26, 107, 58, 0.85);   /* slightly more opaque in dark */
     --opp-muted: rgba(155, 28, 28, 0.85);
 
@@ -90,6 +90,12 @@
   
   button {
     cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  button:focus-visible {
+    outline: 3px solid var(--ta);
+    outline-offset: 2px;
   }
   
   /* Scrollable areas */

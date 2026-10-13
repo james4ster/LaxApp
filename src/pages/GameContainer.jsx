@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Track    from './Track';
 import LiveView from './LiveView';
 import ScoreStrip from '../components/ScoreStrip';
@@ -8,7 +8,9 @@ import { usePossession }  from '../hooks/usePossession';
 import { useGameContext } from '../hooks/useGameContext';
 import { useStrength }    from '../hooks/useStrength';
 import { useTheme }       from '../hooks/useTheme';
+import { useFanPresence } from '../hooks/useFanPresence';
 import { supabase }       from '../lib/supabase';
+import Setup              from './Setup';
 
 /**
  * GameContainer
@@ -23,88 +25,133 @@ export default function GameContainer({ mode = 'track' }) {
   const [tokenError,   setTokenError]   = useState(null);
   const [gameStatus,   setGameStatus]   = useState(null);
   const [tab,          setTab]          = useState(mode === 'live' ? 'fan' : 'track');
+  const [fanTeam,      setFanTeam]      = useState(null);
+  const fanVisitRecorded = useRef(false);
 
   // ── Resolve token → gameId ───────────────────────────────────────────
   useEffect(() => {
-  if (!token) { setTokenError('No game token in URL.'); return; }
+    let cancelled = false;
 
-  const isLive = mode === 'live';
+    async function resolveGame() {
+      if (!token) {
+        setTokenError('No game token in URL.');
+        return;
+      }
 
-  if (isLive) {
-    // Fan URL — look up by team slug → find active game
-    supabase
-      .from('teams')
-      .select('id')
-      .eq('slug', token)
-      .maybeSingle()
-      .then(({ data: team }) => {
-        if (!team) {
-          // Fallback: try fan_token lookup
-          return supabase
-            .from('games')
-            .select('id, status')
-            .eq('fan_token', token)
+      try {
+        if (mode === 'live') {
+          const { data: team, error: teamError } = await supabase
+            .from('teams')
+            .select('id, slug, season_year')
+            .eq('slug', token)
             .maybeSingle();
+
+          if (teamError) throw teamError;
+
+          if (!team) {
+            const { data: game, error: gameError } = await supabase
+              .from('games')
+              .select('id, status')
+              .or(`share_token.eq.${token},fan_token.eq.${token}`)
+              .maybeSingle();
+
+            if (gameError) throw gameError;
+            if (!game) {
+              if (!cancelled) setTokenError('Team or game not found. Check your fan link.');
+              return;
+            }
+            if (!cancelled) {
+              setGameId(game.id);
+              setGameStatus(game.status);
+            }
+            return;
+          }
+
+          const { data: games, error: gamesError } = await supabase
+            .from('games')
+            .select('id, status, scheduled_at, started_at')
+            .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`)
+            .in('status', ['live', 'scheduled', 'final']);
+
+          if (gamesError) throw gamesError;
+          if (!games?.length) {
+            if (!cancelled) setTokenError('No games found for this team yet.');
+            return;
+          }
+
+          const live = games.find((game) => game.status === 'live');
+          const nextScheduled = games
+            .filter((game) => game.status === 'scheduled')
+            .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))[0];
+          const lastFinal = games
+            .filter((game) => game.status === 'final')
+            .sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
+          const best = live ?? nextScheduled ?? lastFinal;
+
+          if (!best) {
+            if (!cancelled) setTokenError('No games found for this team yet.');
+            return;
+          }
+
+          if (!cancelled) {
+            setFanTeam(team);
+            setGameId(best.id);
+            setGameStatus(best.status);
+          }
+          return;
         }
-        // Found team by slug — get their active game
-       // Found team by slug — get every game that could be "the" game
-        // right now, then pick the best one in JS (see below). A plain
-        // SQL order-by can't express "live beats scheduled beats final"
-        // in one pass, especially since scheduled games have a null
-        // started_at, which Postgres sorts *first* on DESC — that would
-        // wrongly surface next week's scheduled game over today's live one.
-        return supabase
+
+        const { data: game, error: gameError } = await supabase
           .from('games')
-          .select('id, status, scheduled_at, started_at')
-          .or(`home_team_id.eq.${team.id},away_team_id.eq.${team.id}`)
-          .in('status', ['live', 'scheduled', 'final']);
-      })
-      .then(({ data: games, error }) => {
-        if (error || !games || games.length === 0) {
-          setTokenError('Game not found. Check your link.');
+          .select('id, status')
+          .or(`share_token.eq.${token},tracker_token.eq.${token}`)
+          .maybeSingle();
+
+        if (gameError) throw gameError;
+        if (!game) {
+          if (!cancelled) setTokenError('Game not found. Check your tracker link.');
           return;
         }
-
-        // Priority: live game right now > soonest upcoming scheduled game
-        // > most recent final. This is what a parent checking the link
-        // actually wants to land on at any given moment in the season.
-        const live = games.find(g => g.status === 'live');
-
-        const nextScheduled = games
-          .filter(g => g.status === 'scheduled')
-          .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))[0];
-
-        const lastFinal = games
-          .filter(g => g.status === 'final')
-          .sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
-
-        const best = live ?? nextScheduled ?? lastFinal;
-
-        if (!best) {
-          setTokenError('Game not found. Check your link.');
-          return;
+        if (!cancelled) {
+          setGameId(game.id);
+          setGameStatus(game.status);
         }
+      } catch (error) {
+        console.error('Failed to resolve game link', error);
+        if (!cancelled) setTokenError(error instanceof Error ? error.message : 'Unable to load this game.');
+      }
+    }
 
-        setGameId(best.id);
-        setGameStatus(best.status);
-      });
-  } else {
-    // Tracker URL — look up by tracker_token
+    resolveGame();
+    return () => { cancelled = true; };
+  }, [token, mode]);
+
+  useEffect(() => {
+    if (mode !== 'live' || !fanTeam || fanVisitRecorded.current) return;
+    fanVisitRecorded.current = true;
+
+    let visitorId;
+    try {
+      const storageKey = `laxlive-fan-${fanTeam.slug}-${fanTeam.season_year}`;
+      visitorId = localStorage.getItem(storageKey);
+      if (!visitorId) {
+        visitorId = crypto.randomUUID();
+        localStorage.setItem(storageKey, visitorId);
+      }
+    } catch (error) {
+      console.error('Unable to persist anonymous fan visitor ID', error);
+      visitorId = crypto.randomUUID();
+    }
+
     supabase
-      .from('games')
-      .select('id, status')
-      .eq('tracker_token', token)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setTokenError('Game not found. Check your link.');
-          return;
-        }
-        setGameId(data.id);
-        setGameStatus(data.status);
+      .rpc('record_fan_view', {
+        p_team_slug: fanTeam.slug,
+        p_visitor_id: visitorId,
+      })
+      .then(({ error }) => {
+        if (error) console.error('Unable to record fan link visit', error);
       });
-  }
-}, [token, mode]);
+  }, [mode, fanTeam]);
 
   // ── Loading / error states ───────────────────────────────────────────
   if (tokenError) return <ErrorScreen message={tokenError} />;
@@ -117,28 +164,74 @@ export default function GameContainer({ mode = 'track' }) {
     return <WaitingScreen mode={mode} gameId={gameId} onStarted={() => setGameStatus('live')} />;
   }
 
-  return <GameShell gameId={gameId} mode={mode} tab={tab} setTab={setTab} />;
+  return <GameShell gameId={gameId} mode={mode} tab={tab} setTab={setTab} fanTeam={fanTeam} />;
 }
 
 // ── GameShell — all hooks, mounted only once gameId is known ─────────────
-function GameShell({ gameId, mode, tab, setTab }) {
+function GameShell({ gameId, mode, tab, setTab, fanTeam }) {
   const lsKey = `game_ended_${gameId}`;
 
   const [gameEnded, setGameEnded] = useState(() => {
     try { return localStorage.getItem(lsKey) === 'true'; } catch { return false; }
   });
   const [role, setRole] = useState('solo');
+  const [players, setPlayers] = useState([]);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState('');
 
-  const { isHome } = useGameContext(gameId);
+  const { isHome, homeTeamId, awayTeamId, loading: gameContextLoading } = useGameContext(gameId);
+  const teamId = mode === 'live' && fanTeam
+    ? fanTeam.id
+    : isHome === null ? null : isHome ? homeTeamId : awayTeamId;
+
+  useEffect(() => {
+    if (!teamId) {
+      if (!gameContextLoading) {
+        setRosterError('Unable to determine which team roster belongs to this game.');
+        setRosterLoading(false);
+      }
+      return;
+    }
+    let cancelled = false;
+    setRosterLoading(true);
+    setRosterError('');
+
+    supabase
+      .from('players')
+      .select('id, jersey_number, full_name, position')
+      .eq('team_id', teamId)
+      .eq('active', true)
+      .order('jersey_number', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error('Failed to load game roster', error);
+          setRosterError(error.message);
+          setRosterLoading(false);
+          return;
+        }
+        const roster = (data ?? []).map((player) => ({
+          id: player.id,
+          num: player.jersey_number ?? '–',
+          name: player.full_name,
+          pos: player.position ?? '',
+        }));
+        setPlayers(roster);
+        setRosterError(roster.length ? '' : 'No active players were found for this team.');
+        setRosterLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [teamId, gameContextLoading]);
 
   const {
     counts, playerStats, quarterStats,
-    quarter, activeGoalie, lastLabel,
+    quarter, activeGoalie, lastLabel, eventSaveError,
     goalies, fieldPlayers,
     gc, qc, saves, svPct, sogUs,
     recordStat, recordPenalty, undoLast,
     setQuarter, setActiveGoalie,
-  } = useGame(gameId);
+  } = useGame(gameId, players);
 
   const {
     possState, usMs, themMs, usPct, themPct, totalMs,
@@ -147,13 +240,20 @@ function GameShell({ gameId, mode, tab, setTab }) {
 
   const { strength, setStrength } = useStrength();
 
-  const { isDark, toggleDark } = useTheme();
+  const {
+    isDark, themeMode, activePreset, toggleDark, setTheme, applyPreset, applyCustom,
+  } = useTheme();
+  const currentFanViewers = useFanPresence(gameId, mode === 'live' ? 'fan' : null);
 
   // ── Mark live on first interaction ───────────────────────────────────
   const markLive = useCallback(async () => {
     await supabase
       .from('games')
-      .update({ status: 'live' })
+      .update({
+        status: 'live',
+        started_at: new Date().toISOString(),
+        share_token: crypto.randomUUID().replace(/-/g, '').slice(0, 16),
+      })
       .eq('id', gameId)
       .eq('status', 'scheduled');
   }, [gameId]);
@@ -187,6 +287,8 @@ function GameShell({ gameId, mode, tab, setTab }) {
     setPoss(side);
   }, [gameEnded, markLive, setPoss]);
 
+  if (rosterLoading) return <LoadingScreen />;
+
   // Fan-only mode — no nav, just LiveView
   if (mode === 'live') {
     return (
@@ -202,6 +304,10 @@ function GameShell({ gameId, mode, tab, setTab }) {
         saves={saves()}         ga={counts.ogoal}
         quarterStats={quarterStats}
         gameEnded={gameEnded}
+        isDark={isDark}
+        onToggleDark={toggleDark}
+        rosterError={rosterError}
+        currentFanViewers={currentFanViewers}
       />
     );
   }
@@ -209,11 +315,21 @@ function GameShell({ gameId, mode, tab, setTab }) {
   // Tracker mode — full shell with nav
   return (
     <div style={S.app}>
+      {eventSaveError && (
+        <div role="alert" style={S.saveError}>
+          Stat not saved to the database: {eventSaveError}
+        </div>
+      )}
+      {rosterError && (
+        <div role="alert" style={S.saveError}>
+          Player roster unavailable: {rosterError}
+        </div>
+      )}
       <ScoreStrip
         scoreUs={counts.goal}
         scoreThem={counts.ogoal}
         quarter={quarter}
-        onQuarterChange={gameEnded || tab === 'fan' ? undefined : setQuarter}
+        onQuarterChange={gameEnded || tab !== 'track' ? undefined : setQuarter}
         isDark={isDark}
         onToggleDark={toggleDark}
       />
@@ -250,6 +366,21 @@ function GameShell({ gameId, mode, tab, setTab }) {
           saves={saves()}         ga={counts.ogoal}
           quarterStats={quarterStats}
           gameEnded={gameEnded}
+          isDark={isDark}
+          onToggleDark={toggleDark}
+          rosterError={rosterError}
+        />
+      </div>
+
+      <div style={{ ...S.page, display: tab === 'setup' ? 'flex' : 'none' }}>
+        <Setup
+          role={role}
+          onRoleChange={setRole}
+          themeMode={themeMode}
+          onThemeChange={setTheme}
+          activePreset={activePreset}
+          onPresetChange={applyPreset}
+          onCustomColors={applyCustom}
         />
       </div>
 
@@ -288,7 +419,11 @@ function WaitingScreen({ gameId, onStarted, mode }) {
     setStarting(true);
     const { error } = await supabase
       .from('games')
-      .update({ status: 'live', started_at: new Date().toISOString() })
+      .update({
+        status: 'live',
+        started_at: new Date().toISOString(),
+        share_token: crypto.randomUUID().replace(/-/g, '').slice(0, 16),
+      })
       .eq('id', gameId)
       .eq('status', 'scheduled'); // no-op if it's already live elsewhere
     setStarting(false);
@@ -338,6 +473,7 @@ function ErrorScreen({ message }) {
 const S = {
   app:  { maxWidth: 480, margin: '0 auto', height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   page: { flex: 1, flexDirection: 'column', overflow: 'hidden', minHeight: 0 },
+  saveError: { padding: '8px 12px', background: '#7f1d1d', color: '#fff', fontSize: 13 },
 };
 
 const W = {

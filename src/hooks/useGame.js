@@ -121,16 +121,24 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
   const [quarterStats, setQuarterStats] = useState({});
   const [quarter, setQuarter] = useState(1);
   const [activeGoalie, setActiveGoalie] = useState(goalies[0] ?? null);
+  const [eventSaveError, setEventSaveError] = useState('');
 
   const lastEvent = useRef(null); // { key, playerId, insertedId }
+  const seenClientEventIds = useRef(new Set());
   const [lastLabel, setLastLabel] = useState('–');
 
-  // ── Rebuild everything from game_events on mount / when gameId changes ──
+  useEffect(() => {
+    setActiveGoalie((current) =>
+      goalies.find((goalie) => goalie.id === current?.id) ?? goalies[0] ?? null
+    );
+  }, [goalies]);
+
+  // ── Rebuild everything from game_events when the game or roster changes ──
   useEffect(() => {
     if (!gameId) return;
     let cancelled = false;
 
-    supabase
+    const loadHistory = () => supabase
       .from('game_events')
       .select('*')
       .eq('game_id', gameId)
@@ -140,6 +148,9 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
         if (error) {
           console.error('useGame: failed to load game_events history', error);
           return;
+        }
+        for (const ev of data || []) {
+          if (ev.client_event_id) seenClientEventIds.current.add(ev.client_event_id);
         }
         let state = {
           counts: { ...EMPTY_COUNTS },
@@ -154,10 +165,47 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
         setQuarterStats(state.quarterStats);
       });
 
-    return () => { cancelled = true; };
-    // players intentionally omitted — roster is static for a given game session
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameId]);
+    loadHistory();
+
+    const channel = supabase
+      .channel(`game-events-${gameId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'game_events', filter: `game_id=eq.${gameId}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const event = payload.new;
+            if (event.client_event_id && seenClientEventIds.current.has(event.client_event_id)) return;
+            if (event.client_event_id) seenClientEventIds.current.add(event.client_event_id);
+
+            setCounts((prev) => applyEvent(
+              { counts: prev, playerStats: {}, quarterStats: {} },
+              event
+            ).counts);
+            setPlayerStats((prev) => applyEvent(
+              { counts: {}, playerStats: prev, quarterStats: {} },
+              event
+            ).playerStats);
+            setQuarterStats((prev) => applyEvent(
+              { counts: {}, playerStats: {}, quarterStats: prev },
+              event
+            ).quarterStats);
+          } else if (payload.eventType === 'DELETE') {
+            loadHistory();
+          }
+        }
+      )
+      .subscribe((status, error) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('useGame: game_events realtime subscription failed', error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [gameId, players]);
 
   const gc = useCallback((k) => counts[k] ?? 0, [counts]);
   const saves = useCallback(
@@ -210,26 +258,34 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
 
       if (gameId) {
         const clientEventId = crypto.randomUUID();
-        const { data, error } = await supabase
-          .from('game_events')
-          .insert({
-            game_id: gameId,
-            player_id: null, //player?.id ?? null, NULL FOR TESTING BEFORE ADDING REAL PLAYERS
-            stat_key: key,
-            period: periodToInt(quarter),
-            value: 1,
-            shot_x: shotLocation?.x ?? null,
-            shot_y: shotLocation?.y ?? null,
-            strength: strength,
-            input_method: 'tap',
-            client_event_id: clientEventId,
-          })
-          .select()
-          .single();
-        if (error) {
+        seenClientEventIds.current.add(clientEventId);
+        try {
+          const { data, error } = await supabase
+            .from('game_events')
+            .insert({
+              game_id: gameId,
+              player_id: player?.id ?? null,
+              stat_key: key,
+              period: periodToInt(quarter),
+              value: 1,
+              shot_x: shotLocation?.x ?? null,
+              shot_y: shotLocation?.y ?? null,
+              strength: strength,
+              input_method: 'tap',
+              client_event_id: clientEventId,
+            })
+            .select()
+            .single();
+          if (error) {
+            console.error('Failed to persist game_event', key, error);
+            setEventSaveError(error.message);
+          } else if (lastEvent.current?.key === key) {
+            setEventSaveError('');
+            lastEvent.current.insertedId = data.id;
+          }
+        } catch (error) {
           console.error('Failed to persist game_event', key, error);
-        } else if (lastEvent.current?.key === key) {
-          lastEvent.current.insertedId = data.id;
+          setEventSaveError(error instanceof Error ? error.message : 'Network request failed');
         }
       }
     },
@@ -264,23 +320,31 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
 
       if (gameId) {
         const clientEventId = crypto.randomUUID();
-        const { data, error } = await supabase
-          .from('game_events')
-          .insert({
-            game_id: gameId,
-            player_id: null, // player?.id ?? null, SET TO NULL FOR TESTING
-            stat_key: key,
-            period: periodToInt(quarter),
-            value: durationSec,
-            input_method: 'tap',
-            client_event_id: clientEventId,
-          })
-          .select()
-          .single();
-        if (error) {
+        seenClientEventIds.current.add(clientEventId);
+        try {
+          const { data, error } = await supabase
+            .from('game_events')
+            .insert({
+              game_id: gameId,
+              player_id: player?.id ?? null,
+              stat_key: key,
+              period: periodToInt(quarter),
+              value: durationSec,
+              input_method: 'tap',
+              client_event_id: clientEventId,
+            })
+            .select()
+            .single();
+          if (error) {
+            console.error('Failed to persist penalty event', error);
+            setEventSaveError(error.message);
+          } else if (lastEvent.current?.key === key) {
+            setEventSaveError('');
+            lastEvent.current.insertedId = data.id;
+          }
+        } catch (error) {
           console.error('Failed to persist penalty event', error);
-        } else if (lastEvent.current?.key === key) {
-          lastEvent.current.insertedId = data.id;
+          setEventSaveError(error instanceof Error ? error.message : 'Network request failed');
         }
       }
     },
@@ -339,6 +403,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
     quarter,
     activeGoalie,
     lastLabel,
+    eventSaveError,
     goalies,
     fieldPlayers,
     gc,

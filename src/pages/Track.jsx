@@ -19,9 +19,9 @@ const S = {
 
   // Possession bar
   possBar:  { display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 4, padding: '5px 8px', borderBottom: '1px solid var(--bdr)', flexShrink: 0 },
-  possBtn:  { border: 'none', borderRadius: 8, padding: '6px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, cursor: 'pointer', transition: 'background .1s, box-shadow .1s' },
-  possNone: { border: 'none', borderRadius: 8, padding: '4px 12px', fontSize: 9, fontWeight: 800, letterSpacing: '.5px', cursor: 'pointer', alignSelf: 'center', transition: 'background .1s, color .1s' },
-  possLbl:  { fontSize: 8, fontWeight: 800, letterSpacing: '.8px', textTransform: 'uppercase', color: 'rgba(255,255,255,.45)' },
+  possBtn:  { border: '2px solid transparent', borderRadius: 8, padding: '6px 8px', minHeight: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, cursor: 'pointer', transition: 'background .1s, box-shadow .1s' },
+  possNone: { border: '1px solid var(--bdr)', borderRadius: 8, padding: '4px 12px', minHeight: 44, fontSize: 9, fontWeight: 800, letterSpacing: '.5px', cursor: 'pointer', alignSelf: 'center', transition: 'background .1s, color .1s' },
+  possLbl:  { fontSize: 9, fontWeight: 800, letterSpacing: '.6px', textTransform: 'uppercase' },
   possTime: { fontSize: 16, fontWeight: 800, fontVariantNumeric: 'tabular-nums', lineHeight: 1 },
 
   // Meta row
@@ -29,8 +29,8 @@ const S = {
   goalieChip:  { display: 'flex', alignItems: 'center', gap: 7, padding: '5px 10px', cursor: 'pointer', flex: 1, borderRight: '1px solid var(--bdr)' },
   goalieBadge: { width: 24, height: 24, borderRadius: '50%', background: 'var(--tp)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'var(--tpt)', flexShrink: 0 },
   goalieInfo:  { display: 'flex', flexDirection: 'column', gap: 1 },
-  goalieName:  { fontSize: 11, fontWeight: 700, color: 'var(--txt)' },
-  goalieStats: { fontSize: 9, color: 'var(--txt2)' },
+  goalieName:  { fontSize: 12, fontWeight: 800, color: 'var(--txt)' },
+  goalieStats: { fontSize: 10, fontWeight: 600, color: 'var(--txt2)' },
   goalieDD:    { flexShrink: 0, borderBottom: '1px solid var(--bdr)', padding: '6px 10px', display: 'flex', gap: 6, background: 'var(--surf)' },
   goalieDDBtn: { border: '1px solid var(--bdr)', borderRadius: 8, background: 'var(--surf2)', padding: '6px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'var(--txt)', flexShrink: 0 },
   strengthSeg: { display: 'flex', padding: '5px 8px', gap: 3, alignItems: 'center' },
@@ -38,7 +38,7 @@ const S = {
 
   // Column headers
   colHdrs: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, padding: '4px 8px 2px', flexShrink: 0 },
-  colHdr:  { textAlign: 'center', fontSize: 9, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', padding: '3px 0', borderRadius: 6 },
+  colHdr:  { textAlign: 'center', fontSize: 9, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', padding: '5px 0', borderRadius: 6 },
 
   // Stat grid
   gridWrap:   { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 5, padding: '0 8px 5px', overflow: 'hidden' },
@@ -50,7 +50,7 @@ const S = {
     display: 'flex', flexDirection: 'column',
     alignItems: 'flex-start', justifyContent: 'flex-end',
     padding: '7px 10px 8px',
-    width: '100%', height: '100%',
+    width: '100%', height: '100%', minHeight: 48,
     transition: 'transform .07s',
   },
   sbtLbl: { fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.6)', lineHeight: 1.2, pointerEvents: 'none' },
@@ -59,7 +59,7 @@ const S = {
   // Bottom bar
   bar:      { display: 'flex', alignItems: 'center', padding: '5px 8px', borderTop: '1px solid var(--bdr)', flexShrink: 0, gap: 6, minHeight: 40, background: 'var(--surf)' },
   undoArea: { display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 },
-  undoBtn:  { border: 'none', background: 'none', color: 'var(--tp)', fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: '4px 6px', flexShrink: 0 },
+  undoBtn:  { border: '1px solid var(--bdr)', borderRadius: 8, background: 'var(--surf2)', color: 'var(--tp)', fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '0 10px', minHeight: 40, flexShrink: 0 },
   lastEvt:  { fontSize: 11, color: 'var(--txt2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   penBtn:   { border: '1.5px solid var(--bdr)', borderRadius: 8, background: 'none', color: 'var(--txt2)', fontSize: 11, fontWeight: 700, padding: '5px 10px', cursor: 'pointer', flexShrink: 0 },
 
@@ -101,6 +101,8 @@ function StatBtn({ statKey, label, side, count, onTap, disabled }) {
         opacity:    disabled ? 0.4 : 1,
         cursor:     disabled ? 'default' : 'pointer',
       }}
+      aria-label={`${label}: ${count ?? 0}`}
+      disabled={disabled}
     >
       <div style={S.sbtLbl}>{label}</div>
       <div style={{ ...S.sbtN, color: acc }}>{count ?? 0}</div>
@@ -213,23 +215,32 @@ export default function Track({
       {ROLE_SHOWS_POSSESSION[role] && (
         <div style={S.possBar}>
           <button
+            type="button"
             onClick={() => !gameEnded && onSetPoss?.('us')}
+            disabled={gameEnded}
+            aria-pressed={possState === 'us'}
             style={{
               ...S.possBtn,
-              background:  'var(--tp)',
-              boxShadow:   possState === 'us' ? '0 0 0 2.5px var(--ta)' : 'none',
-              opacity:     possState === 'us' ? 1 : 0.55,
+              background: possState === 'us' ? 'var(--tp)' : 'var(--surf2)',
+              borderColor: possState === 'us' ? 'var(--tp)' : 'var(--bdr)',
+              boxShadow: possState === 'us' ? '0 0 0 2px var(--ta)' : 'none',
+              color: possState === 'us' ? 'var(--tpt)' : 'var(--txt)',
             }}
           >
-            <div style={{ ...S.possLbl, color: 'rgba(255,255,255,.75)' }}>US</div>
-            <div style={{ ...S.possTime, color: 'var(--ta)' }}>
+            <div style={{ ...S.possLbl, color: possState === 'us' ? 'var(--tpt)' : 'var(--txt2)' }}>
+              {possState === 'us' ? '● US · POSSESSION' : 'US'}
+            </div>
+            <div style={{ ...S.possTime, color: possState === 'us' ? 'var(--tpt)' : 'var(--tp)' }}>
               {fmtMs(usMs)}
             </div>
           </button>
 
-
           <button
+            type="button"
             onClick={() => !gameEnded && onSetPoss?.('none')}
+            disabled={gameEnded}
+            aria-pressed={possState === 'none'}
+            aria-label="Stop possession timer"
             style={{
               ...S.possNone,
               background: possState === 'none' ? 'var(--surf3)'  : 'var(--surf2)',
@@ -240,16 +251,22 @@ export default function Track({
           </button>
 
           <button
+            type="button"
             onClick={() => !gameEnded && onSetPoss?.('them')}
+            disabled={gameEnded}
+            aria-pressed={possState === 'them'}
             style={{
               ...S.possBtn,
-              background:  'var(--opp)',
-              boxShadow:   possState === 'them' ? '0 0 0 2.5px var(--opp-acc)' : 'none',
-              opacity:     possState === 'them' ? 1 : 0.55,
+              background: possState === 'them' ? 'var(--opp)' : 'var(--surf2)',
+              borderColor: possState === 'them' ? 'var(--opp)' : 'var(--bdr)',
+              boxShadow: possState === 'them' ? '0 0 0 2px var(--opp-acc)' : 'none',
+              color: possState === 'them' ? 'var(--oppt)' : 'var(--txt)',
             }}
           >
-            <div style={{ ...S.possLbl, color: 'rgba(255,255,255,.75)' }}>THEM</div>
-            <div style={{ ...S.possTime, color: 'var(--opp-acc)' }}>
+            <div style={{ ...S.possLbl, color: possState === 'them' ? 'var(--oppt)' : 'var(--txt2)' }}>
+              {possState === 'them' ? '● THEM · POSSESSION' : 'THEM'}
+            </div>
+            <div style={{ ...S.possTime, color: possState === 'them' ? 'var(--oppt)' : 'var(--opp)' }}>
               {fmtMs(themMs)}
             </div>
           </button>
@@ -316,8 +333,8 @@ export default function Track({
 
       {/* ── Column headers ──────────────────────────────────── */}
       <div style={S.colHdrs}>
-        <div style={{ ...S.colHdr, color: 'var(--ta)',      background: 'rgba(26,107,58,.18)' }}>← Us</div>
-        <div style={{ ...S.colHdr, color: 'var(--opp-acc)', background: 'rgba(155,28,28,.18)' }}>Them →</div>
+        <div style={{ ...S.colHdr, color: 'var(--tpt)', background: 'var(--tp)' }}>← Us</div>
+        <div style={{ ...S.colHdr, color: 'var(--oppt)', background: 'var(--opp)' }}>Them →</div>
       </div>
 
       {/* ── Stat grid — flat render list ────────────────────── */}
@@ -359,8 +376,9 @@ export default function Track({
             style={S.undoBtn}
             onClick={!gameEnded ? onUndo : undefined}
             disabled={gameEnded}
+            aria-label="Undo last stat"
           >
-            ↩
+            ↩ Undo
           </button>
           <div style={S.lastEvt}>
             Last: <strong style={{ color: 'var(--txt)', fontWeight: 600 }}>{lastLabel}</strong>

@@ -16,6 +16,7 @@ export default function BottomNav({ activeTab, onTabChange }) {
             key={t.id}
             onClick={() => onTabChange(t.id)}
             style={styles.btn}
+            aria-pressed={isOn}
           >
             <div style={styles.icon}>{t.icon}</div>
             <div
@@ -49,6 +50,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '6px 4px 8px',
+    minHeight: 48,
     border: 'none',
     background: 'none',
     cursor: 'pointer',
