@@ -25,6 +25,27 @@ window.addEventListener(
   { passive: true }
 );
 
+const fanPathPattern = /^\/live\/[^/]+\/?$/;
+const isStandalone =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true;
+
+if (fanPathPattern.test(window.location.pathname)) {
+  try {
+    localStorage.setItem('laxtrack_home_fan_path', window.location.pathname);
+  } catch (error) {
+    console.error('Unable to save the season fan link for the home-screen app', error);
+  }
+} else if (isStandalone && window.location.pathname === '/') {
+  try {
+    const fanPath = localStorage.getItem('laxtrack_home_fan_path');
+    if (fanPath && fanPathPattern.test(fanPath)) {
+      window.history.replaceState(null, '', fanPath);
+    }
+  } catch (error) {
+    console.error('Unable to restore the season fan link in the home-screen app', error);
+  }
+}
 
 const path = window.location.pathname;
 
