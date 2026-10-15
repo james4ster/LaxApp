@@ -34,6 +34,8 @@ const periodToInt = (q) => {
   return Number(q);
 };
 
+const periodToQuarter = (period) => period === 5 ? 'OT' : period === 6 ? 'OT2' : period;
+
 function initPlayerStats(players) {
   const map = {};
   players.forEach((p) => {
@@ -131,6 +133,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
 
   const lastEvent = useRef(null); // { key, playerId, insertedId }
   const seenClientEventIds = useRef(new Set());
+  const quarterSaveSequence = useRef(0);
   const [lastLabel, setLastLabel] = useState('–');
 
   useEffect(() => {
@@ -212,6 +215,65 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
       supabase.removeChannel(channel);
     };
   }, [gameId, players]);
+
+  useEffect(() => {
+    if (!gameId) return;
+    let cancelled = false;
+
+    supabase
+      .from('games')
+      .select('current_period')
+      .eq('id', gameId)
+      .single()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error('useGame: failed to load current game period', error);
+          return;
+        }
+        if (data?.current_period != null) setQuarter(periodToQuarter(data.current_period));
+      });
+
+    const channel = supabase
+      .channel(`game-period-${gameId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` },
+        ({ new: game }) => {
+          if (game.current_period != null) setQuarter(periodToQuarter(game.current_period));
+        }
+      )
+      .subscribe((status, error) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('useGame: game period realtime subscription failed', error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [gameId]);
+
+  const updateQuarter = useCallback((nextQuarter) => {
+    setQuarter(nextQuarter);
+    if (!gameId) return;
+    const sequence = ++quarterSaveSequence.current;
+    supabase
+      .from('games')
+      .update({ current_period: periodToInt(nextQuarter) })
+      .eq('id', gameId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('useGame: failed to save current game period', error);
+          if (sequence === quarterSaveSequence.current) {
+            setEventSaveError(`Quarter change was not saved: ${error.message}`);
+          }
+        } else if (sequence === quarterSaveSequence.current) {
+          setEventSaveError('');
+        }
+      });
+  }, [gameId]);
 
   const gc = useCallback((k) => counts[k] ?? 0, [counts]);
   const saves = useCallback(
@@ -420,7 +482,7 @@ export function useGame(gameId = null, players = DEMO_PLAYERS) {
     recordStat,
     recordPenalty,
     undoLast,
-    setQuarter,
+    setQuarter: updateQuarter,
     setActiveGoalie,
   };
 }

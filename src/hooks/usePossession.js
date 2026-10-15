@@ -23,6 +23,9 @@ export function usePossession(gameId = null, isHome = true) {
   const currentSide = useRef('none');
   const rafId = useRef(null);
   const eventsRef = useRef([]);
+  const ignoredEndedEventIds = useRef(new Set());
+  const localEndTimestamp = useRef(null);
+  const localActionSequence = useRef(0);
 
   const tick = useCallback(() => {
     if (currentSide.current === 'none' || startTs.current === null) return;
@@ -88,6 +91,7 @@ export function usePossession(gameId = null, isHome = true) {
   useEffect(() => {
     if (!gameId) return;
     let cancelled = false;
+    const loadSequence = localActionSequence.current;
 
     supabase
       .from('possession_events')
@@ -95,7 +99,7 @@ export function usePossession(gameId = null, isHome = true) {
       .eq('game_id', gameId)
       .order('started_at', { ascending: true })
       .then(({ data }) => {
-        if (cancelled) return;
+        if (cancelled || loadSequence !== localActionSequence.current) return;
         eventsRef.current = data || [];
         applyEvents(eventsRef.current);
       });
@@ -109,9 +113,13 @@ export function usePossession(gameId = null, isHome = true) {
           if (payload.eventType === 'INSERT') {
             eventsRef.current = [...eventsRef.current, payload.new];
           } else if (payload.eventType === 'UPDATE') {
+            const isLocalEnd =
+              localEndTimestamp.current !== null &&
+              Math.abs(Date.parse(payload.new.ended_at) - localEndTimestamp.current) <= 5;
             eventsRef.current = eventsRef.current.map((e) =>
               e.id === payload.new.id ? payload.new : e
             );
+            if (ignoredEndedEventIds.current.delete(payload.new.id) || isLocalEnd) return;
           } else if (payload.eventType === 'DELETE') {
             eventsRef.current = eventsRef.current.filter((e) => e.id !== payload.old.id);
           }
@@ -129,6 +137,10 @@ export function usePossession(gameId = null, isHome = true) {
   const setPoss = useCallback(
     (side) => {
       const now = Date.now();
+      localActionSequence.current++;
+      if (currentSide.current !== 'none') localEndTimestamp.current = now;
+      const openEvent = eventsRef.current.find((event) => !event.ended_at);
+      if (openEvent) ignoredEndedEventIds.current.add(openEvent.id);
 
       if (currentSide.current !== 'none' && startTs.current !== null) {
         const elapsed = now - startTs.current;

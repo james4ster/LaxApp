@@ -26,11 +26,11 @@ const S = {
 
   // Meta row
   metaRow:     { display: 'flex', alignItems: 'stretch', borderBottom: '1px solid var(--bdr)', flexShrink: 0 },
-  goalieChip:  { display: 'flex', alignItems: 'center', gap: 7, padding: '5px 10px', cursor: 'pointer', flex: 1, borderRight: '1px solid var(--bdr)' },
+  goalieChip:  { display: 'flex', alignItems: 'center', gap: 7, padding: '5px 10px', cursor: 'pointer', flex: 1, borderRight: '1px solid var(--bdr)', background: 'var(--ts)', borderRadius: 8 },
   goalieBadge: { width: 24, height: 24, borderRadius: '50%', background: 'var(--tp)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'var(--tpt)', flexShrink: 0 },
   goalieInfo:  { display: 'flex', flexDirection: 'column', gap: 1 },
-  goalieName:  { fontSize: 12, fontWeight: 800, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.3)' },
-  goalieStats: { fontSize: 10, fontWeight: 600, color: 'var(--txt2)' },
+  goalieName:  { fontSize: 12, fontWeight: 800, color: '#fff' },
+  goalieStats: { fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,.72)' },
   goalieDD:    { flexShrink: 0, borderBottom: '1px solid var(--bdr)', padding: '6px 10px', display: 'flex', gap: 6, background: 'var(--surf)' },
   goalieDDBtn: { border: '1px solid var(--bdr)', borderRadius: 8, background: 'var(--surf2)', padding: '6px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'var(--txt)', flexShrink: 0 },
   strengthSeg: { display: 'flex', padding: '5px 8px', gap: 3, alignItems: 'center' },

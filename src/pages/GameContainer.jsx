@@ -316,7 +316,7 @@ function GameShell({ gameId, mode, tab, setTab, fanTeam }) {
     <div style={S.app}>
       {eventSaveError && (
         <div role="alert" style={S.saveError}>
-          Stat not saved to the database: {eventSaveError}
+          Game update not saved to the database: {eventSaveError}
         </div>
       )}
       {rosterError && (

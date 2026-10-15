@@ -30,3 +30,5 @@ To make an iPhone home-screen app open the season fan view, open the team fan li
 The game-start panel's per-game fan QR is a separate link. Share the team-level Fan link from the manager page for a season-long URL.
 
 To enable audience counts, run [`supabase/migrations/20261013_fan_analytics.sql`](./supabase/migrations/20261013_fan_analytics.sql) in the Supabase SQL Editor. The manager page then shows approximate live fan sessions for the current game and unique browsers that opened the season fan link. Unique-browser counts do not identify people, and realtime viewer counts depend on Supabase Realtime being available.
+
+To sync the selected quarter from the tracker to fan views, run [`supabase/migrations/20261015_live_game_period.sql`](./supabase/migrations/20261015_live_game_period.sql) in the Supabase SQL Editor. The quarter indicator and quarter breakdown then update across devices in realtime.
