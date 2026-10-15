@@ -42,6 +42,10 @@ function initPlayerStats(players) {
   return map;
 }
 
+function isGoalie(player) {
+  return ['G', 'GK'].includes(String(player.pos ?? '').trim().toUpperCase());
+}
+
 function emptyQuarterBucket() {
   return { goal: 0, ogoal: 0, sog: 0, oshot: 0 };
 }
@@ -113,8 +117,8 @@ function applyEvent(state, ev) {
 }
 
 export function useGame(gameId = null, players = DEMO_PLAYERS) {
-  const goalies = players.filter((p) => p.pos === 'G');
-  const fieldPlayers = players.filter((p) => p.pos !== 'G');
+  const goalies = players.filter(isGoalie);
+  const fieldPlayers = players.filter((p) => !isGoalie(p));
 
   const [counts, setCounts] = useState({ ...EMPTY_COUNTS });
   const [playerStats, setPlayerStats] = useState(() => initPlayerStats(players));

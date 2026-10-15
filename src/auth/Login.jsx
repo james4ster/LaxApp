@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import './Login.css';
 
 export default function Login() {
   const [connecting, setConnecting] = useState(false);
@@ -35,13 +36,53 @@ export default function Login() {
   }
 
   return (
-    <div>
-      <h1>LaxLive</h1>
+    <main className="login-page">
+      <section className="login-showcase" aria-label="LaxTrack">
+        <div className="login-brand">
+          <img src="/icons.svg" alt="" className="login-brand-mark" />
+          <span>LaxTrack</span>
+        </div>
+        <div className="login-hero">
+          <div className="login-eyebrow"><span /> THE GAME, IN REAL TIME</div>
+          <h1>Every play.<br /><span>Every number.</span></h1>
+          <p>Keep your team connected with live stats, clear insights, and a better view of every game.</p>
+        </div>
+        <div className="login-showcase-footer">
+          <span className="login-live-mark" />
+          Built for the sideline. Made for the whole team.
+        </div>
+      </section>
 
-      <button onClick={handleGoogleLogin} disabled={connecting}>
-        {connecting ? 'Connecting…' : 'Continue with Google'}
-      </button>
-      {errorMessage && <p role="alert">{errorMessage}</p>}
-    </div>
+      <section className="login-panel">
+        <div className="login-card">
+          <div className="login-mobile-brand">
+            <img src="/icons.svg" alt="" className="login-brand-mark" />
+            <span>LaxTrack</span>
+          </div>
+          <div className="login-card-kicker">TEAM ACCESS</div>
+          <h2>Welcome back</h2>
+          <p className="login-card-copy">Sign in to manage your team and follow the action.</p>
+
+          <button
+            className="login-google-button"
+            onClick={handleGoogleLogin}
+            disabled={connecting}
+          >
+            <span className="login-google-mark" aria-hidden="true">G</span>
+            <span>{connecting ? 'Connecting…' : 'Continue with Google'}</span>
+            {!connecting && <span className="login-button-arrow" aria-hidden="true">→</span>}
+          </button>
+
+          {errorMessage && (
+            <p className="login-error" role="alert">{errorMessage}</p>
+          )}
+          <p className="login-secure-note">
+            <span aria-hidden="true">◆</span>
+            Secure sign-in for coaches and team managers
+          </p>
+        </div>
+        <div className="login-panel-footer">© {new Date().getFullYear()} LaxTrack</div>
+      </section>
+    </main>
   );
 }

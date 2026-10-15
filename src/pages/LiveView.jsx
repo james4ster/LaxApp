@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import PlayerStatsTable from '../components/PlayerStatsTable';
 
 function fmtMs(ms) {
-  const t = Math.floor(ms / 1000);
+  const t = Math.round(ms / 1000);
   const m = Math.floor(t / 60);
   const s = t % 60;
   return `${m}:${s < 10 ? '0' : ''}${s}`;
@@ -446,8 +446,8 @@ function TeamStatsTable({ gc, sogUs, svPct, scoreUs, scoreThem }) {
   const rows = [
     { label: 'Goals',         us: scoreUs,                        them: scoreThem },
     { label: 'Shots on goal', us: sogUs(),                        them: gc('oshot') },
-    { label: 'Shots missed',  us: gc('miss'),                     them: '–' },
-    { label: 'Ground balls',  us: gc('gb'),                       them: gc('gbt') || '–' },  // ← gbt added
+    { label: 'Shots missed',  us: gc('miss'),                     them: gc('omiss') },
+    { label: 'Ground balls',  us: gc('gb'),                       them: gc('gbt') },
     { label: 'Turnovers',     us: gc('to'),                       them: '–' },
     { label: 'Caused TOs',    us: gc('cto'),                      them: '–' },
     { label: 'Faceoffs',      us: `${gc('fo_w')}–${gc('fo_l')}`, them: `${gc('fo_l')}–${gc('fo_w')}` },

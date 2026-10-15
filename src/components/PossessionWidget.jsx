@@ -1,7 +1,7 @@
 import React from 'react';
 
 function fmtMs(ms) {
-  const total = Math.floor(ms / 1000);
+  const total = Math.round(ms / 1000);
   const m = Math.floor(total / 60);
   const sec = total % 60;
   return `${m}:${sec < 10 ? '0' : ''}${sec}`;

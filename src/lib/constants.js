@@ -75,7 +75,7 @@ export const STAT_SECTIONS = [
     id: 'field',
     label: 'Field',
     rows: [
-      { us: { key: 'gb',  label: 'Ground Ball' }, them: { key: 'gb_them', label: 'GB — Them' } },
+      { us: { key: 'gb',  label: 'Ground Ball' }, them: { key: 'gbt', label: 'GB — Them' } },
       { us: { key: 'cto', label: 'Caused TO'   }, them: { key: 'to',      label: 'Turnover'  } },
     ],
   },
