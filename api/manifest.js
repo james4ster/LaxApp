@@ -11,7 +11,7 @@ export default function handler(request, response) {
   response.setHeader('Content-Type', 'application/manifest+json');
   response.setHeader('Cache-Control', 'no-store');
   response.status(200).json({
-    id: '/',
+    id: startUrl,
     name: 'LaxTrack',
     short_name: 'LaxTrack',
     description: 'Live lacrosse stat tracker',
