@@ -29,7 +29,7 @@ const S = {
   goalieChip:  { display: 'flex', alignItems: 'center', gap: 7, padding: '5px 10px', cursor: 'pointer', flex: 1, borderRight: '1px solid var(--bdr)' },
   goalieBadge: { width: 24, height: 24, borderRadius: '50%', background: 'var(--tp)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'var(--tpt)', flexShrink: 0 },
   goalieInfo:  { display: 'flex', flexDirection: 'column', gap: 1 },
-  goalieName:  { fontSize: 12, fontWeight: 800, color: 'var(--txt)' },
+  goalieName:  { fontSize: 12, fontWeight: 800, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.3)' },
   goalieStats: { fontSize: 10, fontWeight: 600, color: 'var(--txt2)' },
   goalieDD:    { flexShrink: 0, borderBottom: '1px solid var(--bdr)', padding: '6px 10px', display: 'flex', gap: 6, background: 'var(--surf)' },
   goalieDDBtn: { border: '1px solid var(--bdr)', borderRadius: 8, background: 'var(--surf2)', padding: '6px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: 'var(--txt)', flexShrink: 0 },
@@ -119,7 +119,7 @@ function StatBtn({ statKey, label, side, count, onTap, disabled }) {
 }
 
 function fmtMs(ms) {
-  const t = Math.round(ms / 1000);
+  const t = Math.floor(ms / 1000);
   const m = Math.floor(t / 60);
   const s = t % 60;
   return `${m}:${s < 10 ? '0' : ''}${s}`;
@@ -148,6 +148,7 @@ export default function Track({
   strength,
   onSetStrength,
   gameEnded,
+  isDark = false,
   /**
    * customSections — extensibility hook for team-defined stats.
    * Same shape as STAT_SECTIONS entries: { id, label, rows: [{ us, them }] }
@@ -282,7 +283,7 @@ export default function Track({
           >
             <div style={S.goalieBadge}>{activeG?.num ?? '?'}</div>
             <div style={S.goalieInfo}>
-              <div style={S.goalieName}>#{activeG?.num} {activeG?.name}</div>
+              <div style={{ ...S.goalieName, color: isDark ? '#fff' : 'var(--txt)' }}>#{activeG?.num} {activeG?.name}</div>
               <div style={S.goalieStats}>{saves} sv · {ga} GA · {svp}</div>
             </div>
           </div>

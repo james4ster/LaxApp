@@ -153,14 +153,15 @@ export function usePossession(gameId = null, isHome = true) {
       }
 
       if (gameId) {
+        const timestamp = new Date(now).toISOString();
         if (newSide === 'none') {
-          endPossession(gameId).catch((err) => console.error('endPossession failed', err));
+          endPossession(gameId, timestamp).catch((err) => console.error('endPossession failed', err));
         } else {
           const dbTeam =
             newSide === 'us'
               ? (isHome ? 'home' : 'away')
               : (isHome ? 'away' : 'home');
-          setPossession(gameId, dbTeam, `${gameId}-${now}`).catch((err) =>
+          setPossession(gameId, dbTeam, `${gameId}-${now}`, timestamp).catch((err) =>
             console.error('setPossession failed', err)
           );
         }

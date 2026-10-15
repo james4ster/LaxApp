@@ -68,7 +68,7 @@ export const STAT_SECTIONS = [
     label: 'Shots',
     rows: [
       { us: { key: 'sog',  label: 'Shot On Goal' }, them: { key: 'oshot', label: 'Shot Against' } },
-      { us: { key: 'miss', label: 'Shot Missed'  }, them: { key: 'omiss', label: 'Miss — Them'  } },
+      { us: { key: 'miss', label: 'Shot Missed'  }, them: { key: 'omiss', label: 'Shot Missed - Them' } },
     ],
   },
   {

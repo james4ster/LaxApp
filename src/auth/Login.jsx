@@ -39,7 +39,7 @@ export default function Login() {
     <main className="login-page">
       <section className="login-showcase" aria-label="LaxTrack">
         <div className="login-brand">
-          <img src="/icons.svg" alt="" className="login-brand-mark" />
+          <img src="/favicon.jpg" alt="" className="login-brand-mark" />
           <span>LaxTrack</span>
         </div>
         <div className="login-hero">
@@ -56,7 +56,7 @@ export default function Login() {
       <section className="login-panel">
         <div className="login-card">
           <div className="login-mobile-brand">
-            <img src="/icons.svg" alt="" className="login-brand-mark" />
+            <img src="/favicon.jpg" alt="" className="login-brand-mark" />
             <span>LaxTrack</span>
           </div>
           <div className="login-card-kicker">TEAM ACCESS</div>

@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import PlayerStatsTable from '../components/PlayerStatsTable';
 
 function fmtMs(ms) {
-  const t = Math.round(ms / 1000);
+  const t = Math.floor(ms / 1000);
   const m = Math.floor(t / 60);
   const s = t % 60;
   return `${m}:${s < 10 ? '0' : ''}${s}`;

@@ -214,7 +214,7 @@ function GameShell({ gameId, mode, tab, setTab, fanTeam }) {
           id: player.id,
           num: player.jersey_number ?? '–',
           name: player.full_name,
-          pos: player.position ?? '',
+          pos: (player.position ?? '').trim().toUpperCase(),
         }));
         setPlayers(roster);
         setRosterError(roster.length ? '' : 'No active players were found for this team.');
@@ -348,6 +348,7 @@ function GameShell({ gameId, mode, tab, setTab, fanTeam }) {
           role={role}                 onEndGame={handleEndGame}
           onRecordPenalty={gameEnded ? undefined : recordPenalty}
           strength={strength}         onSetStrength={gameEnded ? undefined : setStrength}
+          isDark={isDark}
           gameEnded={gameEnded}
         />
       </div>

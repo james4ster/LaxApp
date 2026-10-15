@@ -43,7 +43,9 @@ function initPlayerStats(players) {
 }
 
 function isGoalie(player) {
-  return ['G', 'GK'].includes(String(player.pos ?? '').trim().toUpperCase());
+  return ['G', 'GK', 'GOALIE', 'GOALKEEPER'].includes(
+    String(player.pos ?? '').trim().toUpperCase()
+  );
 }
 
 function emptyQuarterBucket() {

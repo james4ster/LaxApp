@@ -7,13 +7,12 @@ function nowISO() {
 // -----------------------------
 // START / SWITCH POSSESSION
 // -----------------------------
-export async function setPossession(gameId, team, clientEventId) {
-  const now = nowISO();
+export async function setPossession(gameId, team, clientEventId, timestamp = nowISO()) {
 
   // 1. Close any open possession
   await supabase
     .from('possession_events')
-    .update({ ended_at: now })
+    .update({ ended_at: timestamp })
     .eq('game_id', gameId)
     .is('ended_at', null);
 
@@ -23,7 +22,7 @@ export async function setPossession(gameId, team, clientEventId) {
     .insert({
       game_id: gameId,
       team,
-      started_at: now,
+      started_at: timestamp,
       client_event_id: clientEventId,
     })
     .select()
@@ -37,12 +36,11 @@ export async function setPossession(gameId, team, clientEventId) {
 // -----------------------------
 // END POSSESSION (NONE)
 // -----------------------------
-export async function endPossession(gameId) {
-  const now = nowISO();
+export async function endPossession(gameId, timestamp = nowISO()) {
 
   await supabase
     .from('possession_events')
-    .update({ ended_at: now })
+    .update({ ended_at: timestamp })
     .eq('game_id', gameId)
     .is('ended_at', null);
 }
