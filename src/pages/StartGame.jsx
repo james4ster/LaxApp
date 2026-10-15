@@ -6,7 +6,7 @@ import QRCode from 'qrcode';   // npm install qrcode
  * StartGame
  *
  * Shown on the Dashboard when a scheduled game is selected.
- * Manager taps "Start Game" → generates share_token → shows two QR codes:
+ * Manager taps "Start Game" → shows QR codes using the game's existing tokens:
  *   📋 Tracker URL  → /track/:token
  *   👀 Fan URL      → /live/:token
  *
@@ -19,7 +19,7 @@ export default function StartGame({ game, onStarted, onClose }) {
   const [starting,    setStarting]    = useState(false);
   const [liveGame,    setLiveGame]    = useState(
     // If game already has a token (e.g. was started before), show QRs immediately
-    game.share_token ? game : null
+    game.tracker_token || game.fan_token ? game : null
   );
   const [trackQR,     setTrackQR]     = useState(null);
   const [fanQR,       setFanQR]       = useState(null);
@@ -28,29 +28,29 @@ export default function StartGame({ game, onStarted, onClose }) {
 
   // Generate QR codes whenever liveGame is set
   useEffect(() => {
-    if (!liveGame?.share_token) return;
+    if (!liveGame) return;
     const base = window.location.origin;
-    const trackUrl = `${base}/track/${liveGame.share_token}`;
-    const fanUrl   = `${base}/live/${liveGame.share_token}`;
 
-    QRCode.toDataURL(trackUrl, { width: 200, margin: 1, color: { dark: '#111', light: '#fff' } })
-      .then(setTrackQR);
-    QRCode.toDataURL(fanUrl, { width: 200, margin: 1, color: { dark: '#111', light: '#fff' } })
-      .then(setFanQR);
+    if (liveGame.tracker_token) {
+      QRCode.toDataURL(`${base}/track/${liveGame.tracker_token}`, {
+        width: 200, margin: 1, color: { dark: '#111', light: '#fff' },
+      }).then(setTrackQR);
+    }
+    if (liveGame.fan_token) {
+      QRCode.toDataURL(`${base}/live/${liveGame.fan_token}`, {
+        width: 200, margin: 1, color: { dark: '#111', light: '#fff' },
+      }).then(setFanQR);
+    }
   }, [liveGame]);
 
   const handleStart = async () => {
     setStarting(true);
     setError(null);
 
-    // Generate a share token
-    const share_token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-
     const { data, error: err } = await supabase
       .from('games')
       .update({
         status:      'live',
-        share_token,
         started_at:  new Date().toISOString(),
       })
       .eq('id', game.id)
@@ -70,7 +70,8 @@ export default function StartGame({ game, onStarted, onClose }) {
 
   const copy = async (type) => {
     const base  = window.location.origin;
-    const token = liveGame.share_token;
+    const token = type === 'track' ? liveGame.tracker_token : liveGame.fan_token;
+    if (!token) return;
     const url   = type === 'track'
       ? `${base}/track/${token}`
       : `${base}/live/${token}`;

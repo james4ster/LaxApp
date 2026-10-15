@@ -15,7 +15,7 @@ import Setup              from './Setup';
 /**
  * GameContainer
  *
- * Resolves share_token → game_id from Supabase, then mounts all game hooks.
+ * Resolves tracker_token/fan_token → game_id from Supabase, then mounts all game hooks.
  * Used by both /track/:token (keeper) and /live/:token (fan).
  */
 export default function GameContainer({ mode = 'track' }) {
@@ -52,7 +52,7 @@ export default function GameContainer({ mode = 'track' }) {
             const { data: game, error: gameError } = await supabase
               .from('games')
               .select('id, status')
-              .or(`share_token.eq.${token},fan_token.eq.${token}`)
+              .eq('fan_token', token)
               .maybeSingle();
 
             if (gameError) throw gameError;
@@ -104,7 +104,7 @@ export default function GameContainer({ mode = 'track' }) {
         const { data: game, error: gameError } = await supabase
           .from('games')
           .select('id, status')
-          .or(`share_token.eq.${token},tracker_token.eq.${token}`)
+          .eq('tracker_token', token)
           .maybeSingle();
 
         if (gameError) throw gameError;
@@ -252,7 +252,6 @@ function GameShell({ gameId, mode, tab, setTab, fanTeam }) {
       .update({
         status: 'live',
         started_at: new Date().toISOString(),
-        share_token: crypto.randomUUID().replace(/-/g, '').slice(0, 16),
       })
       .eq('id', gameId)
       .eq('status', 'scheduled');
@@ -422,7 +421,6 @@ function WaitingScreen({ gameId, onStarted, mode }) {
       .update({
         status: 'live',
         started_at: new Date().toISOString(),
-        share_token: crypto.randomUUID().replace(/-/g, '').slice(0, 16),
       })
       .eq('id', gameId)
       .eq('status', 'scheduled'); // no-op if it's already live elsewhere

@@ -126,7 +126,7 @@ function LinkCard({ label, sub, url, stats }) {
 function GameRow({ game, teamId, baseUrl }) {
   const [open, setOpen] = useState(false);
   const isHome = game.home_team_id === teamId;
-  const trackerToken = game.share_token ?? game.tracker_token;
+  const trackerToken = game.tracker_token;
   const trackerUrl = game.status !== 'scheduled' && trackerToken
     ? `${baseUrl}/track/${trackerToken}`
     : null;
