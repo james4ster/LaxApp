@@ -1,7 +1,14 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <link rel="manifest" href="/manifest.webmanifest">
+    <script>
+      const fanPath = window.location.pathname;
+      const appStartUrl = /^\/live\/[^/]+\/?$/.test(fanPath) ? fanPath : '/';
+      const manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = `/api/manifest?start_url=${encodeURIComponent(appStartUrl)}`;
+      document.head.append(manifestLink);
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
     <link rel="apple-touch-icon" href="/favicon.jpg" />

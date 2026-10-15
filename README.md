@@ -25,7 +25,7 @@ Replace `public/favicon.jpg` to change the app icon. `index.html` uses it for br
 
 The fan link is `/live/<team-slug>` and is shown on the team's manager page. It selects the live game, next scheduled game, or most recent final game, so fans can keep the same link throughout the season. Use a stable deployed domain for sharing; Codespaces preview URLs are for development and may change.
 
-When a fan opens that link in their mobile browser, the app remembers it for the installed home-screen app. Since the PWA manifest starts at `/`, launching the installed app restores the saved season fan link instead of showing the coach login.
+To make an iPhone home-screen app open the season fan view, open the team fan link in Safari and add it to the Home Screen from that page. The install manifest uses that fan URL as the app's start page, so the home-screen icon opens the public fan view rather than the coach login. Existing home-screen icons may need to be removed and added again after this change.
 
 The game-start panel's per-game fan QR is a separate link. Share the team-level Fan link from the manager page for a season-long URL.
 

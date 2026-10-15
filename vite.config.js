@@ -8,24 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons.svg'],
-      manifest: {
-        name: 'LaxTrack',
-        short_name: 'LaxTrack',
-        description: 'Live lacrosse stat tracker',
-        theme_color: '#0b2e16',
-        background_color: '#0b2e16',
-        display: 'standalone',
-        orientation: 'portrait',
-        start_url: '/',
-        icons: [
-          {
-            src: 'icons.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any',
-          },
-        ],
-      },
+      manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
